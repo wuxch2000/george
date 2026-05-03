@@ -18,9 +18,17 @@ class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
         super().__init__(center_x=x, center_y=y, width=width, height=heigh, angle=angle, color=arcade.color.ROSE_EBONY)
         return
+    
+class Tank(arcade.Sprite):
+    def __init__(self, x, y):
+        super().__init__("image/tank-top-view-50.png", 6)
+        self.center_x = x
+        self.center_y = y
+        return
 
 class TankattackView(arcade.View):
     castle = arcade.SpriteList()
+    tank_list = arcade.SpriteList()
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
@@ -33,6 +41,7 @@ class TankattackView(arcade.View):
         self.castle.append(Brick(760, 435, 10, 50, angle=-45))
         self.castle.append(Brick(638, 435, 10, 50, angle=45))
 
+        self.tank_list.append(Tank(500,300))
         return
     def on_key_press(self, key, modifiers):
         return 
@@ -41,6 +50,7 @@ class TankattackView(arcade.View):
     def on_draw(self):
         self.clear()
         self.castle.draw()
+        self.tank_list.draw()
         return
     def on_update(self, delta_time):
         return
