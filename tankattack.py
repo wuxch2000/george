@@ -7,6 +7,14 @@ class TankattackWindow(arcade.Window):
         super().__init__(500,500,"Tank Attack")
         self.background_color = arcade.csscolor.CORNFLOWER_BLUE
         return
+    
+class TankattackView(arcade.View):
+    def __init__(self):
+        super().__init__()
+        return
+    def on_draw():
+        super.on_draw()
+        return
 
 def main():
     print("Game Start")
