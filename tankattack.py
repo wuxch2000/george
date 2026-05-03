@@ -2,7 +2,6 @@
 
 import arcade
 
-
 class TankattackWindow(arcade.Window):
     def __init__(self):
         super().__init__(500,500,"Tank Attack")
