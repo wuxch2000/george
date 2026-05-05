@@ -4,7 +4,7 @@ import math
 import time
 import arcade
 
-castle = arcade.SpriteList()
+castle_list = arcade.SpriteList()
 tank_list = arcade.SpriteList()
 bullet_list = arcade.SpriteList()
 
@@ -24,6 +24,22 @@ class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
         super().__init__(center_x=x, center_y=y, width=width, height=heigh, angle=angle, color=arcade.color.ROSE_EBONY)
         return
+
+class Castle():
+    def __init__(self, x, y, width, heigh):
+        self.list= []
+        self.list.append(Brick(700, 450, 100, 10))
+        self.list.append(Brick(700, 300, 100, 10))
+        self.list.append(Brick(625, 375, 10, 100))
+        self.list.append(Brick(775, 375, 10, 100))
+        self.list.append(Brick(762, 314, 10, 50, angle=45))
+        self.list.append(Brick(638, 313, 10, 50, angle=-45))
+        self.list.append(Brick(760, 435, 10, 50, angle=-45))
+        self.list.append(Brick(638, 435, 10, 50, angle=45))
+        return
+    def append_to_list(self, a:arcade.SpriteList):
+        for i in self.list:
+            a.append(i)
 
 class Bullet(arcade.Sprite):
     def __init__(self, x, y, target_x, target_y, speed = 5):
@@ -52,7 +68,7 @@ class Tank(arcade.Sprite):
         self.health = health
         self.shoot_interval = shoot_interval
         self.shoot_time=time.time()
-        self.shoot_sound = arcade.sound.load_sound(":resources:sounds/explosion2.wav")
+        self.shoot_sound = arcade.sound.load_sound(":resources:sounds/laser1.wav")
         return
     def set_radians(self, r):
         self.radians = (math.pi/2)-r
@@ -86,15 +102,8 @@ class TankattackView(arcade.View):
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
-        castle.append(Brick(700, 450, 100, 10))
-        castle.append(Brick(700, 300, 100, 10))
-        castle.append(Brick(625, 375, 10, 100))
-        castle.append(Brick(775, 375, 10, 100))
-        castle.append(Brick(762, 314, 10, 50, angle=45))
-        castle.append(Brick(638, 313, 10, 50, angle=-45))
-        castle.append(Brick(760, 435, 10, 50, angle=-45))
-        castle.append(Brick(638, 435, 10, 50, angle=45))
-
+        castle = Castle(300,300,50,50)
+        castle.append_to_list(castle_list)
         tank = Tank(100,100)
         # tank.set_radians(math.pi/2)
         tank.set_dest(400,450)
@@ -106,7 +115,7 @@ class TankattackView(arcade.View):
         return
     def on_draw(self):
         self.clear()
-        castle.draw()
+        castle_list.draw()
         tank_list.draw()
         bullet_list.draw()
         return
