@@ -1,5 +1,6 @@
 #! /usr/local/bin/python3
 
+import math
 import arcade
 
 class TankattackWindow(arcade.Window):
@@ -20,10 +21,29 @@ class Brick(arcade.SpriteSolidColor):
         return
     
 class Tank(arcade.Sprite):
-    def __init__(self, x, y):
-        super().__init__("image/tank-top-view-50.png", 6)
+    destin_x = None
+    destin_y = None
+    move_radians = None
+    def __init__(self, x, y, speed = 1, health = 10):
+        super().__init__("image/tank-top-view-50.png", 1)
         self.center_x = x
         self.center_y = y
+        self.speed = speed
+        self.health = health
+        return
+    def set_radians(self, r):
+        self.radians = (math.pi/2)-r
+        return
+    def set_dest(self, x, y):
+        self.destin_x, self.destin_y = x, y
+        r = math.atan2(self.destin_y - self.center_y,self.destin_x - self.center_x)
+        self.set_radians(r)
+        self.change_x = self.speed * math.cos(r)
+        self.change_y = self.speed * math.sin(r)
+        return
+    def update(self, delta_time: float = 1/60):
+        self.center_x += self.change_x
+        self.center_y += self.change_y
         return
 
 class TankattackView(arcade.View):
@@ -41,7 +61,10 @@ class TankattackView(arcade.View):
         self.castle.append(Brick(760, 435, 10, 50, angle=-45))
         self.castle.append(Brick(638, 435, 10, 50, angle=45))
 
-        self.tank_list.append(Tank(500,300))
+        tank = Tank(300,300)
+        # tank.set_radians(math.pi/2)
+        tank.set_dest(400,450)
+        self.tank_list.append(tank)
         return
     def on_key_press(self, key, modifiers):
         return 
@@ -53,6 +76,7 @@ class TankattackView(arcade.View):
         self.tank_list.draw()
         return
     def on_update(self, delta_time):
+        self.tank_list.update()
         return
 
 
