@@ -7,6 +7,8 @@ import arcade
 castle_list = arcade.SpriteList()
 tank_list = arcade.SpriteList()
 bullet_list = arcade.SpriteList()
+tower_sprite_list = arcade.SpriteList()
+tower_list = []
 
 class TankattackWindow(arcade.Window):
     def __init__(self):
@@ -57,6 +59,40 @@ class Bullet(arcade.Sprite):
         self.center_y += self.change_y
         return
     
+class Tower():
+    def __init__(self, x, y, shoot_interval=2):
+        self.shoot_interval = shoot_interval
+        self.shoot_time=time.time()
+        self.tower_color = arcade.color.VIOLET_BLUE
+        self.base_radius = 10
+        self.cannon_width=self.base_radius*2
+        self.cannon_height=self.base_radius/2
+        self.base = arcade.SpriteCircle(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
+        self.cannon = arcade.SpriteSolidColor(color=self.tower_color, center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
+        return
+    def append_to_list(self, a:arcade.SpriteList):
+        a.append(self.base)
+        a.append(self.cannon)
+        return
+    def aim(self, s:arcade.Sprite):
+        r = math.atan2(s.center_y - self.cannon.center_y, s.center_x - self.cannon.center_x)
+        self.cannon.center_x = self.base.center_x + ((self.cannon_width)/2)*math.cos(r)
+        self.cannon.center_y = self.base.center_y + ((self.cannon_width)/2)*math.sin(r)
+        self.cannon.radians = -r
+        self.aim_sprite = s
+        return
+    def shoot(self):
+        if self.aim_sprite:
+            bullet = Bullet(self.cannon.center_x, self.cannon.center_y, self.aim_sprite.center_x, self.aim_sprite.center_y)
+            bullet_list.append(bullet)
+        return
+    def update(self, delta_time: float = 1/60):
+        current_time = time.time()
+        if current_time - self.shoot_time >= self.shoot_interval:
+            self.shoot()
+            self.shoot_time = current_time
+        return
+
 class Tank(arcade.Sprite):
     destin_x = None
     destin_y = None
@@ -81,7 +117,6 @@ class Tank(arcade.Sprite):
         self.change_y = self.speed * math.sin(r)
         return
     def shoot(self):
-        print("shoot")
         if self.destin_x and self.destin_y:
             arcade.play_sound(self.shoot_sound)
             bullet = Bullet(self.center_x, self.center_y, self.destin_x, self.destin_y)
@@ -105,23 +140,37 @@ class TankattackView(arcade.View):
         castle = Castle(300,300,50,50)
         castle.append_to_list(castle_list)
         tank = Tank(100,100)
-        # tank.set_radians(math.pi/2)
-        tank.set_dest(400,450)
+        tank.set_dest(1200,450)
         tank_list.append(tank)
         return
     def on_key_press(self, key, modifiers):
         return 
     def on_key_release(self, key, modifiers):
         return
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            tower = Tower(x,y)
+            tower_list.append(tower)
+            tower.append_to_list(tower_sprite_list)
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            pass
+        return
     def on_draw(self):
         self.clear()
         castle_list.draw()
         tank_list.draw()
         bullet_list.draw()
+        tower_sprite_list.draw()
         return
     def on_update(self, delta_time):
+        for s in tower_list:
+            closest_sprite, distance = arcade.get_closest_sprite(s.base, tank_list)
+            if closest_sprite:
+                s.aim(closest_sprite)
+                s.update()
         tank_list.update()
         bullet_list.update()
+        tower_sprite_list.update()
         return
 
 
