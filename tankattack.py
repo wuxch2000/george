@@ -79,7 +79,7 @@ class Tower():
         return
     def shoot(self):
         if self.aim_sprite:
-            bullet = Bullet(self.cannon.center_x, self.cannon.center_y, self.aim_sprite.center_x, self.aim_sprite.center_y)
+            bullet = Bullet(self.cannon.center_x, self.cannon.center_y, self.aim_sprite.center_x, self.aim_sprite.center_y, distance=10)
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
@@ -90,10 +90,17 @@ class Tower():
         return
 
 class Tank(arcade.Sprite):
+    final_destin_x = None
+    final_destin_y = None
     destin_x = None
     destin_y = None
-    def __init__(self, x, y, speed = 1, health = 3, shoot_interval=2):
-        super().__init__("image/tank-top-view-50.png", 1)
+    def __init__(self, x, y, speed = 1, health = 3, shoot_interval=2, final_x=WINDOW_WIDTH/2, final_y=WINDOW_HEIGHT/2):
+        # super().__init__("image/tank.blue.png", 1)
+        super().__init__()
+        super().append_texture(arcade.load_texture("image/tank.blue.png"))
+        super().append_texture(arcade.load_texture("image/tank.yellow.png"))
+        super().append_texture(arcade.load_texture("image/tank.red.png"))
+        super().set_texture(0)
         self.center_x = x
         self.center_y = y
         self.speed = speed
@@ -101,6 +108,8 @@ class Tank(arcade.Sprite):
         self.shoot_interval = shoot_interval
         self.shoot_time=time.time()
         self.shoot_sound = arcade.sound.load_sound(":resources:sounds/laser1.wav")
+        self.final_destin_x=final_x
+        self.final_destin_y=final_y
         return
     def set_radians(self, r):
         self.radians = (math.pi/2)-r
@@ -130,6 +139,10 @@ class Tank(arcade.Sprite):
         return
     def hit(self):
         self.health-=1
+        if self.health == 2:
+            super().set_texture(1)
+        elif self.health == 1:
+            super().set_texture(2)
         return
 
 class TankattackView(arcade.View):
@@ -161,7 +174,6 @@ class TankattackView(arcade.View):
         if random.randint(-1,1) >= 0:
             random_y = WINDOW_HEIGHT-random_y
         tank = Tank(random_x,random_y)
-        tank.set_dest(WINDOW_WIDTH/2,WINDOW_HEIGHT/2)
         tank_list.append(tank)
         return
     def on_update(self, delta_time):
