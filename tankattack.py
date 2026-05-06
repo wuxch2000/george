@@ -2,6 +2,7 @@
 
 import math
 import time
+import random
 import arcade
 
 castle_list = arcade.SpriteList()
@@ -10,17 +11,8 @@ bullet_list = arcade.SpriteList()
 tower_sprite_list = arcade.SpriteList()
 tower_list = []
 
-class TankattackWindow(arcade.Window):
-    def __init__(self):
-        super().__init__(1400,750,"Tank Attack")
-        return
-    def on_key_press(self, key, modifiers):
-        if key == arcade.key.ESCAPE or key == arcade.key.Q:
-            print("Game Over")
-            self.close()
-        return 
-    def on_key_release(self, key, modifiers):
-        return
+WINDOW_WIDTH =1600 
+WINDOW_HEIGHT=1000 
     
 class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
@@ -44,12 +36,12 @@ class Castle():
             a.append(i)
 
 class Bullet(arcade.Sprite):
-    def __init__(self, x, y, target_x, target_y, speed = 5):
+    def __init__(self, x, y, target_x, target_y, speed = 5, distance=80):
         super().__init__(":resources:images/space_shooter/laserBlue01.png", 0.8)
-        self.center_x = x
-        self.center_y = y
+        r = math.atan2(target_y - y, target_x - x)
+        self.center_x = x+distance*math.cos(r)
+        self.center_y = y+distance*math.sin(r)
         self.speed = speed
-        r = math.atan2(target_y - self.center_y, target_x - self.center_x)
         self.radians = -r
         self.change_x = self.speed * math.cos(r)
         self.change_y = self.speed * math.sin(r)
@@ -58,6 +50,10 @@ class Bullet(arcade.Sprite):
         self.center_x += self.change_x
         self.center_y += self.change_y
         return
+    def out_of_view(self):
+        if self.top >= WINDOW_HEIGHT or self.bottom <= 0 or self.left <=0 or self.right >= WINDOW_WIDTH:
+            return True
+        return False
     
 class Tower():
     def __init__(self, x, y, shoot_interval=2):
@@ -134,14 +130,13 @@ class Tank(arcade.Sprite):
         return
 
 class TankattackView(arcade.View):
+    new_tank_interval = 3
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
         castle = Castle(300,300,50,50)
         castle.append_to_list(castle_list)
-        tank = Tank(100,100)
-        tank.set_dest(1200,450)
-        tank_list.append(tank)
+        self.new_tank_time = 0
         return
     def on_key_press(self, key, modifiers):
         return 
@@ -155,14 +150,22 @@ class TankattackView(arcade.View):
         elif button == arcade.MOUSE_BUTTON_RIGHT:
             pass
         return
-    def on_draw(self):
-        self.clear()
-        castle_list.draw()
-        tank_list.draw()
-        bullet_list.draw()
-        tower_sprite_list.draw()
+    def _new_tank(self):
+        random_x = random.randint(0, 200)
+        random_y = random.randint(0, 200)
+        if random.randint(-1,1) >= 0:
+            random_x = WINDOW_WIDTH-random_x
+        if random.randint(-1,1) >= 0:
+            random_y = WINDOW_HEIGHT-random_y
+        tank = Tank(random_x,random_y)
+        tank.set_dest(WINDOW_WIDTH/2,WINDOW_HEIGHT/2)
+        tank_list.append(tank)
         return
     def on_update(self, delta_time):
+        cur_time = time.time()
+        if self.new_tank_time == 0 or cur_time - self.new_tank_time >= self.new_tank_interval:
+            self.new_tank_time = cur_time
+            self._new_tank()
         for s in tower_list:
             closest_sprite, distance = arcade.get_closest_sprite(s.base, tank_list)
             if closest_sprite:
@@ -171,8 +174,38 @@ class TankattackView(arcade.View):
         tank_list.update()
         bullet_list.update()
         tower_sprite_list.update()
+        for bullet in bullet_list:
+            if bullet.out_of_view():
+                bullet.kill()
+                continue
+            hit_tank_list = bullet.collides_with_list(tank_list)
+            if len(hit_tank_list) > 0:
+                for t in hit_tank_list:
+                    print("hit tank, bullet,box:", bullet.hit_box)
+                    t.kill()
+                bullet.kill()
+        return
+    def on_draw(self):
+        self.clear()
+        castle_list.draw()
+        tank_list.draw()
+        bullet_list.draw()
+        tower_sprite_list.draw()
+        # bullet_list.draw_hit_boxes(arcade.color.RED)
+        # tank_list.draw_hit_boxes(arcade.color.RED)
         return
 
+class TankattackWindow(arcade.Window):
+    def __init__(self):
+        super().__init__(WINDOW_WIDTH,WINDOW_HEIGHT,"Tank Attack")
+        return
+    def on_key_press(self, key, modifiers):
+        if key == arcade.key.ESCAPE or key == arcade.key.Q:
+            print("Game Over")
+            self.close()
+        return 
+    def on_key_release(self, key, modifiers):
+        return
 
 def main():
     print("Game Start")
