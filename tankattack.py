@@ -92,7 +92,7 @@ class Tower():
 class Tank(arcade.Sprite):
     destin_x = None
     destin_y = None
-    def __init__(self, x, y, speed = 1, health = 10, shoot_interval=2):
+    def __init__(self, x, y, speed = 1, health = 3, shoot_interval=2):
         super().__init__("image/tank-top-view-50.png", 1)
         self.center_x = x
         self.center_y = y
@@ -128,6 +128,9 @@ class Tank(arcade.Sprite):
         self.center_x += self.change_x
         self.center_y += self.change_y
         return
+    def hit(self):
+        self.health-=1
+        return
 
 class TankattackView(arcade.View):
     new_tank_interval = 3
@@ -151,8 +154,8 @@ class TankattackView(arcade.View):
             pass
         return
     def _new_tank(self):
-        random_x = random.randint(0, 200)
-        random_y = random.randint(0, 200)
+        random_x = random.randint(0, 400)
+        random_y = random.randint(0, 400)
         if random.randint(-1,1) >= 0:
             random_x = WINDOW_WIDTH-random_x
         if random.randint(-1,1) >= 0:
@@ -167,10 +170,11 @@ class TankattackView(arcade.View):
             self.new_tank_time = cur_time
             self._new_tank()
         for s in tower_list:
-            closest_sprite, distance = arcade.get_closest_sprite(s.base, tank_list)
-            if closest_sprite:
-                s.aim(closest_sprite)
-                s.update()
+            if len(tank_list) > 0:
+                closest_sprite, distance = arcade.get_closest_sprite(s.base, tank_list)
+                if closest_sprite:
+                    s.aim(closest_sprite)
+                    s.update()
         tank_list.update()
         bullet_list.update()
         tower_sprite_list.update()
@@ -181,8 +185,9 @@ class TankattackView(arcade.View):
             hit_tank_list = bullet.collides_with_list(tank_list)
             if len(hit_tank_list) > 0:
                 for t in hit_tank_list:
-                    print("hit tank, bullet,box:", bullet.hit_box)
-                    t.kill()
+                    t.hit()
+                    if t.health == 0:
+                        t.kill()
                 bullet.kill()
         return
     def on_draw(self):
