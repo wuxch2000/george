@@ -8,8 +8,7 @@ import arcade
 castle_list = arcade.SpriteList()
 tank_list = arcade.SpriteList()
 bullet_list = arcade.SpriteList()
-tower_sprite_list = arcade.SpriteList()
-tower_list = []
+tower_list = arcade.SpriteList()
 
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000 
@@ -55,38 +54,54 @@ class Bullet(arcade.Sprite):
             return True
         return False
     
-class Tower():
-    def __init__(self, x, y, shoot_interval=2):
-        self.shoot_interval = shoot_interval
-        self.shoot_time=time.time()
+class Tower(arcade.SpriteCircle):
+    target = None
+    shoot_time = 0
+    base_radius = 10
+    shoot_interval = 2
+    def __init__(self, x, y, health=3):
+        self.health = health
         self.tower_color = arcade.color.VIOLET_BLUE
-        self.base_radius = 10
+        super().__init__(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
         self.cannon_width=self.base_radius*2
         self.cannon_height=self.base_radius/2
-        self.base = arcade.SpriteCircle(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
         self.cannon = arcade.SpriteSolidColor(color=self.tower_color, center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
         return
     def append_to_list(self, a:arcade.SpriteList):
-        a.append(self.base)
+        a.append(self)
         a.append(self.cannon)
         return
     def aim(self, s:arcade.Sprite):
         r = math.atan2(s.center_y - self.cannon.center_y, s.center_x - self.cannon.center_x)
-        self.cannon.center_x = self.base.center_x + ((self.cannon_width)/2)*math.cos(r)
-        self.cannon.center_y = self.base.center_y + ((self.cannon_width)/2)*math.sin(r)
+        self.cannon.center_x = self.center_x + ((self.cannon_width)/2)*math.cos(r)
+        self.cannon.center_y = self.center_y + ((self.cannon_width)/2)*math.sin(r)
         self.cannon.radians = -r
-        self.aim_sprite = s
+        self.target = s
         return
     def shoot(self):
-        if self.aim_sprite:
-            bullet = Bullet(self.cannon.center_x, self.cannon.center_y, self.aim_sprite.center_x, self.aim_sprite.center_y, distance=10)
+        if self.target:
+            bullet = Bullet(self.center_x, self.center_y, self.target.center_x, self.target.center_y)
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
         current_time = time.time()
-        if current_time - self.shoot_time >= self.shoot_interval:
-            self.shoot()
-            self.shoot_time = current_time
+        if self.target:
+            if self.shoot_time == 0 or current_time - self.shoot_time >= self.shoot_interval:
+                self.shoot_time = current_time
+                self.shoot()
+        return
+    def hit(self):
+        self.health-=1
+        if self.health == 2:
+            self.color = arcade.color.YELLOW
+            self.cannon.color = arcade.color.YELLOW
+        elif self.health == 1:
+            self.color = arcade.color.RED
+            self.cannon.color = arcade.color.RED
+        return
+    def kill(self):
+        self.cannon.kill()
+        super().kill()
         return
 
 class Tank(arcade.Sprite):
@@ -122,6 +137,10 @@ class Tank(arcade.Sprite):
         self.change_x = self.speed * math.cos(r)
         self.change_y = self.speed * math.sin(r)
         return
+    def aim(self, s: arcade.Sprite):
+        return self.set_dest(s.center_x, s.center_y)
+    def reset_aim(self):
+        return self.set_dest(self.final_destin_x, self.final_destin_y)
     def shoot(self):
         if self.destin_x and self.destin_y:
             arcade.play_sound(self.shoot_sound)
@@ -162,8 +181,7 @@ class TankattackView(arcade.View):
     def on_mouse_press(self, x, y, button, modifiers):
         if button == arcade.MOUSE_BUTTON_LEFT:
             tower = Tower(x,y)
-            tower_list.append(tower)
-            tower.append_to_list(tower_sprite_list)
+            tower.append_to_list(tower_list)
         elif button == arcade.MOUSE_BUTTON_RIGHT:
             pass
         return
@@ -178,37 +196,60 @@ class TankattackView(arcade.View):
         tank_list.append(tank)
         return
     def on_update(self, delta_time):
+        tank_list.update()
+        bullet_list.update()
         cur_time = time.time()
+        tower_base_list = arcade.SpriteList()
+        for tower in tower_list:
+            if isinstance(tower, Tower):
+                tower_base_list.append(tower)
+        tower_base_list.update()
         if self.new_tank_time == 0 or cur_time - self.new_tank_time >= self.new_tank_interval:
             self.new_tank_time = cur_time
             self._new_tank()
-        for s in tower_list:
-            if len(tank_list) > 0:
-                closest_sprite, distance = arcade.get_closest_sprite(s.base, tank_list)
+        if tank_list:
+            for tower in tower_base_list:
+                closest_sprite, distance = arcade.get_closest_sprite(tower, tank_list)
                 if closest_sprite:
-                    s.aim(closest_sprite)
-                    s.update()
-        tank_list.update()
-        bullet_list.update()
-        tower_sprite_list.update()
+                    tower.aim(closest_sprite)
+        if tower_base_list:
+            for tank in tank_list:
+                closest_sprite, distance = arcade.get_closest_sprite(tank, tower_base_list)
+                if closest_sprite:
+                    tank.aim(closest_sprite)
+        else:
+            for tank in tank_list:
+                tank.reset_aim()
         for bullet in bullet_list:
             if bullet.out_of_view():
                 bullet.kill()
                 continue
-            hit_tank_list = bullet.collides_with_list(tank_list)
-            if len(hit_tank_list) > 0:
-                for t in hit_tank_list:
-                    t.hit()
-                    if t.health == 0:
-                        t.kill()
-                bullet.kill()
+            if tank_list:
+                hit_tank_list = bullet.collides_with_list(tank_list)
+                if hit_tank_list:
+                    for t in hit_tank_list:
+                        t.hit()
+                        if t.health == 0:
+                            t.kill()
+                    bullet.kill()
+                    continue
+            if tower_base_list:
+                hit_tower_list = bullet.collides_with_list(tower_base_list)
+                if hit_tower_list:
+                    for t in hit_tower_list:
+                        if isinstance(t, Tower):
+                            t.hit()
+                            if t.health == 0:
+                                t.kill()
+                    bullet.kill()
+                    continue
         return
     def on_draw(self):
         self.clear()
         castle_list.draw()
         tank_list.draw()
         bullet_list.draw()
-        tower_sprite_list.draw()
+        tower_list.draw()
         # bullet_list.draw_hit_boxes(arcade.color.RED)
         # tank_list.draw_hit_boxes(arcade.color.RED)
         return
