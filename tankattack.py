@@ -110,6 +110,7 @@ class Tank(arcade.Sprite):
         self.shoot_sound = arcade.sound.load_sound(":resources:sounds/laser1.wav")
         self.final_destin_x=final_x
         self.final_destin_y=final_y
+        self.set_dest(final_x,final_y)
         return
     def set_radians(self, r):
         self.radians = (math.pi/2)-r
