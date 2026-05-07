@@ -107,6 +107,8 @@ class Tower(arcade.SpriteCircle):
         self.cannon_width=self.base_radius*2
         self.cannon_height=self.base_radius/2
         self.cannon = arcade.SpriteSolidColor(color=self.tower_color, center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
+        self.shoot_sound = arcade.sound.load_sound(":resources:/sounds/hurt2.wav")
+        self.explsion_sound = arcade.sound.load_sound(":resources:/sounds/explosion1.wav")
         return
     def aim(self, s:arcade.Sprite):
         r = math.atan2(s.center_y - self.cannon.center_y, s.center_x - self.cannon.center_x)
@@ -117,6 +119,7 @@ class Tower(arcade.SpriteCircle):
         return
     def shoot(self):
         if self.target:
+            arcade.play_sound(self.shoot_sound)
             bullet = Bullet(self.center_x, self.center_y, self.target.center_x, self.target.center_y, self)
             bullet_list.append(bullet)
         return
@@ -136,6 +139,7 @@ class Tower(arcade.SpriteCircle):
             self.color = arcade.color.RED
             self.cannon.color = arcade.color.RED
         if self.health == 0:
+            arcade.play_sound(self.explsion_sound)
             self.kill()
         return
     def kill(self):
@@ -163,6 +167,7 @@ class Tank(arcade.Sprite):
         self.shoot_interval = shoot_interval
         self.shoot_time=time.time()
         self.shoot_sound = arcade.sound.load_sound(":resources:sounds/laser1.wav")
+        self.explsion_sound = arcade.sound.load_sound(":resources:/sounds/explosion2.wav")
         if target_sprite:
             self.final_target_sprite = target_sprite
             self._set_dest_pos()
@@ -216,6 +221,7 @@ class Tank(arcade.Sprite):
         elif self.health == 1:
             super().set_texture(2)
         if self.health == 0:
+            arcade.play_sound(self.explsion_sound)
             self.kill()
         return
     def kill(self):
@@ -231,6 +237,7 @@ class TankattackView(arcade.View):
         self.castle = Castle()
         castle_list.append(self.castle)
         self.new_tank_time = 0
+        self.game_over_text = arcade.Text(f"Game Over", (WINDOW_WIDTH/2), WINDOW_HEIGHT/2 + 40, anchor_x="center", anchor_y="center", color=arcade.color.YELLOW, font_size=46, bold=True, italic=True )
         return
     def on_key_press(self, key, modifiers):
         return 
@@ -290,7 +297,7 @@ class TankattackView(arcade.View):
             bullet.check_hit(castle_list)
         return
     def on_draw(self):
-        global show_range
+        global show_range, game_over
         self.clear()
         if show_range:
             range_list.draw()
@@ -299,6 +306,8 @@ class TankattackView(arcade.View):
         bullet_list.draw()
         tower_list.draw()
         tower_part_list.draw()
+        if game_over:
+            self.game_over_text.draw()
         # bullet_list.draw_hit_boxes(arcade.color.RED)
         # tank_list.draw_hit_boxes(arcade.color.RED)
         return
