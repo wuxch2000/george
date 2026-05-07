@@ -15,27 +15,48 @@ range_list = arcade.SpriteList()
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000 
 show_range=False
+game_over=False
     
 class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
         super().__init__(center_x=x, center_y=y, width=width, height=heigh, angle=angle, color=arcade.color.ROSE_EBONY)
         return
 
-class Castle():
-    def __init__(self, x, y, width, heigh):
-        self.list= []
-        self.list.append(Brick(700, 450, 100, 10))
-        self.list.append(Brick(700, 300, 100, 10))
-        self.list.append(Brick(625, 375, 10, 100))
-        self.list.append(Brick(775, 375, 10, 100))
-        self.list.append(Brick(762, 314, 10, 50, angle=45))
-        self.list.append(Brick(638, 313, 10, 50, angle=-45))
-        self.list.append(Brick(760, 435, 10, 50, angle=-45))
-        self.list.append(Brick(638, 435, 10, 50, angle=45))
+class Castle(arcade.Sprite):
+    castle_radius = 100
+    health = 20
+    castle_color = arcade.color.DARK_LIVER
+    def __init__(self):
+        super().__init__()
+        # self.texture=arcade.make_circle_texture(self.castle_radius , self.castle_color)
+        self._new_radius()
+        self.center_x=WINDOW_WIDTH/2
+        self.center_y=WINDOW_HEIGHT/2
+        self.delta_radius = int(self.castle_radius/self.health)
+        # self.list.append(Brick(700, 450, 100, 10))
+        # self.list.append(Brick(700, 300, 100, 10))
+        # self.list.append(Brick(625, 375, 10, 100))
+        # self.list.append(Brick(775, 375, 10, 100))
+        # self.list.append(Brick(762, 314, 10, 50, angle=45))
+        # self.list.append(Brick(638, 313, 10, 50, angle=-45))
+        # self.list.append(Brick(760, 435, 10, 50, angle=-45))
+        # self.list.append(Brick(638, 435, 10, 50, angle=45))
         return
-    def append_to_list(self, a:arcade.SpriteList):
-        for i in self.list:
-            a.append(i)
+    def _new_radius(self):
+        if self.castle_radius > 0:
+            self.texture = arcade.make_circle_texture(self.castle_radius , self.castle_color)
+            # self.hit_box = self.texture.hit_box_points
+        return
+    def hit(self):
+        global game_over
+        self.health -= 1
+        self.castle_radius -= self.delta_radius
+        print(f"castle: health={self.health}, {self.castle_radius}")
+        self._new_radius()
+        if self.health == 0:
+            print("Castle is destroied")
+            game_over = True
+            self.kill()
 
 class Bullet(arcade.Sprite):
     shooter = None
@@ -69,8 +90,6 @@ class Bullet(arcade.Sprite):
             if s is self.shooter:
                 continue
             s.hit()
-            if s.health == 0:
-                s.kill()
             self.kill()
             break
         return
@@ -79,9 +98,9 @@ class Tower(arcade.SpriteCircle):
     shoot_time = 0
     base_radius = 10
     shoot_interval = 2
+    tower_color = arcade.color.VIOLET_BLUE
     def __init__(self, x, y, health=3, range=300):
         self.health = health
-        self.tower_color = arcade.color.VIOLET_BLUE
         self.range = range
         super().__init__(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_YELLOW, center_x=x, center_y=y)
@@ -116,6 +135,8 @@ class Tower(arcade.SpriteCircle):
         elif self.health == 1:
             self.color = arcade.color.RED
             self.cannon.color = arcade.color.RED
+        if self.health == 0:
+            self.kill()
         return
     def kill(self):
         self.cannon.kill()
@@ -124,11 +145,9 @@ class Tower(arcade.SpriteCircle):
         return
 
 class Tank(arcade.Sprite):
-    final_destin_x = None
-    final_destin_y = None
-    destin_x = None
-    destin_y = None
-    def __init__(self, x, y, speed = 1, health = 3, range=300, shoot_interval=2, final_x=WINDOW_WIDTH/2, final_y=WINDOW_HEIGHT/2):
+    final_target_sprite=None
+    target_sprite = None
+    def __init__(self, x, y, speed = 1, health = 3, range=300, shoot_interval=2, target_sprite:arcade.Sprite=None):
         # super().__init__("image/tank.blue.png", 1)
         super().__init__()
         super().append_texture(arcade.load_texture("image/tank.blue.png"))
@@ -144,28 +163,36 @@ class Tank(arcade.Sprite):
         self.shoot_interval = shoot_interval
         self.shoot_time=time.time()
         self.shoot_sound = arcade.sound.load_sound(":resources:sounds/laser1.wav")
-        self.final_destin_x=final_x
-        self.final_destin_y=final_y
-        self.set_dest(final_x,final_y)
+        if target_sprite:
+            self.final_target_sprite = target_sprite
+            self._set_dest_pos()
         return
     def set_radians(self, r):
         self.radians = (math.pi/2)-r
         return
-    def set_dest(self, x, y):
-        self.destin_x, self.destin_y = x, y
-        r = math.atan2(self.destin_y - self.center_y,self.destin_x - self.center_x)
-        self.set_radians(r)
-        self.change_x = self.speed * math.cos(r)
-        self.change_y = self.speed * math.sin(r)
+    def _set_dest_pos(self):
+        s = self.target_sprite
+        if not s:
+            s = self.final_target_sprite
+        if s:
+            r = math.atan2(s.center_y - self.center_y, s.center_x - self.center_x)
+            self.set_radians(r)
+            self.change_x = self.speed * math.cos(r)
+            self.change_y = self.speed * math.sin(r)
         return
-    def aim(self, s: arcade.Sprite):
-        return self.set_dest(s.center_x, s.center_y)
+    def aim(self, target: arcade.Sprite):
+        self.target_sprite = target
+        return self._set_dest_pos()
     def reset_aim(self):
-        return self.set_dest(self.final_destin_x, self.final_destin_y)
+        self.target_sprite = None
+        return self._set_dest_pos()
     def shoot(self):
-        if self.destin_x and self.destin_y:
+        s = self.target_sprite
+        if not s:
+            s = self.final_target_sprite
+        if s:
             arcade.play_sound(self.shoot_sound)
-            bullet = Bullet(self.center_x, self.center_y, self.destin_x, self.destin_y, self)
+            bullet = Bullet(self.center_x, self.center_y, s.center_x, s.center_y, self)
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
@@ -173,7 +200,9 @@ class Tank(arcade.Sprite):
         if current_time - self.shoot_time >= self.shoot_interval:
             self.shoot()
             self.shoot_time = current_time
-        if self.destin_x and self.destin_y and (self.destin_x-self.center_x) <= abs(self.change_x) and abs(self.destin_y-self.center_y) <= abs(self.change_y):
+        if self.target_sprite and arcade.check_for_collision(self.target_sprite, self):
+            return
+        if self.final_target_sprite and arcade.check_for_collision(self.final_target_sprite, self):
             return
         self.center_x += self.change_x
         self.center_y += self.change_y
@@ -186,6 +215,8 @@ class Tank(arcade.Sprite):
             super().set_texture(1)
         elif self.health == 1:
             super().set_texture(2)
+        if self.health == 0:
+            self.kill()
         return
     def kill(self):
         self.range_spirte.kill()
@@ -197,8 +228,8 @@ class TankattackView(arcade.View):
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
-        castle = Castle(300,300,50,50)
-        castle.append_to_list(castle_list)
+        self.castle = Castle()
+        castle_list.append(self.castle)
         self.new_tank_time = 0
         return
     def on_key_press(self, key, modifiers):
@@ -221,11 +252,14 @@ class TankattackView(arcade.View):
             random_x = WINDOW_WIDTH-random_x
         if random.randint(-1,1) >= 0:
             random_y = WINDOW_HEIGHT-random_y
-        tank = Tank(random_x,random_y)
+        tank = Tank(random_x,random_y,target_sprite=self.castle)
         tank_list.append(tank)
         range_list.append(tank.range_spirte)
         return
     def on_update(self, delta_time):
+        global game_over
+        if game_over:
+            return
         tank_list.update()
         bullet_list.update()
         tower_list.update()
@@ -253,6 +287,7 @@ class TankattackView(arcade.View):
         for bullet in bullet_list:
             bullet.check_hit(tank_list)
             bullet.check_hit(tower_list)
+            bullet.check_hit(castle_list)
         return
     def on_draw(self):
         global show_range
