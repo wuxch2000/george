@@ -99,7 +99,7 @@ class Tower(arcade.SpriteCircle):
     base_radius = 10
     shoot_interval = 2
     tower_color = arcade.color.VIOLET_BLUE
-    def __init__(self, x, y, health=3, range=300):
+    def __init__(self, x, y, health=3, range=400):
         self.health = health
         self.range = range
         super().__init__(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
@@ -230,7 +230,7 @@ class Tank(arcade.Sprite):
         return
 
 class TankattackView(arcade.View):
-    new_tank_interval = 3
+    new_tank_interval = 1
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
