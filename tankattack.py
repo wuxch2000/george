@@ -25,7 +25,7 @@ class Brick(arcade.SpriteSolidColor):
 class Castle(arcade.Sprite):
     castle_radius = 100
     health = 20
-    castle_color = arcade.color.DARK_LIVER
+    castle_color = arcade.color.DARK_BLUE
     def __init__(self):
         super().__init__()
         # self.texture=arcade.make_circle_texture(self.castle_radius , self.castle_color)
