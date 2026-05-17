@@ -13,6 +13,10 @@ tower_list = arcade.SpriteList()
 tower_part_list = arcade.SpriteList()
 range_list = arcade.SpriteList()
 
+NEW_TANK_INTERVAL=10
+NEW_TOWER_INTERVAL=5
+NEW_BOMB_INTERVAL=10
+
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000 
 
@@ -25,6 +29,7 @@ ITEM_GAP=8
 ITEM_WIDTH=SELECT_VIEW_WIDTH-2*ITEM_GAP
 ITEM_HEIGHT=ITEM_WIDTH
 ITEM_BG_COLOR=arcade.color.BRASS
+ITEM_BG_COLOR_AVAILABLE=arcade.color.CELADON_GREEN
 ITEM_HOLD_BG_COLOR=arcade.color.GRAY
 
 
@@ -52,14 +57,6 @@ class Castle(arcade.Sprite):
         self.center_x=WINDOW_WIDTH/2
         self.center_y=WINDOW_HEIGHT/2
         self.delta_radius = int(self.castle_radius/self.health)
-        # self.list.append(Brick(700, 450, 100, 10))
-        # self.list.append(Brick(700, 300, 100, 10))
-        # self.list.append(Brick(625, 375, 10, 100))
-        # self.list.append(Brick(775, 375, 10, 100))
-        # self.list.append(Brick(762, 314, 10, 50, angle=45))
-        # self.list.append(Brick(638, 313, 10, 50, angle=-45))
-        # self.list.append(Brick(760, 435, 10, 50, angle=-45))
-        # self.list.append(Brick(638, 435, 10, 50, angle=45))
         return
     def _new_radius(self):
         if self.castle_radius > 0:
@@ -171,7 +168,6 @@ class Tank(arcade.Sprite):
     final_target_sprite=None
     target_sprite = None
     def __init__(self, x, y, speed = 1, health = 3, range=300, shoot_interval=2, target_sprite:arcade.Sprite=None):
-        # super().__init__("image/tank.blue.png", 1)
         super().__init__()
         super().append_texture(arcade.load_texture("image/tank.blue.png"))
         super().append_texture(arcade.load_texture("image/tank.yellow.png"))
@@ -297,8 +293,13 @@ class Item():
         self.point_top_middle = self.point_top_left + Vec2(self.height/2, 0)
         self.point_center = pos+Vec2(self.width/2, self.height/2)
         self.hold_polygon = None
+        self.available = False
     def _draw_back_ground(self):
-        arcade.draw_lbwh_rectangle_filled(self.point_bottom_left.x, self.point_bottom_left.y, self.width, self.height, ITEM_BG_COLOR)
+        if self.available:
+            bg_color = ITEM_BG_COLOR_AVAILABLE
+        else:
+            bg_color = ITEM_BG_COLOR
+        arcade.draw_lbwh_rectangle_filled(self.point_bottom_left.x, self.point_bottom_left.y, self.width, self.height, bg_color)
         if self.hold_polygon:
             arcade.draw_polygon_filled(self.hold_polygon, ITEM_HOLD_BG_COLOR)
     def _start_draw_circle(self):
@@ -322,6 +323,7 @@ class Item():
             print('holding is finished')
             self.hold_path = None
             self.hold_polygon = None
+            self.available = True
             return
         self.hold_polygon.append(self.point_center)
         for i in self.hold_path.passed_path:
@@ -334,12 +336,19 @@ class Item():
 
     def check_select(self, point):
         if arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):
-            self.selected()
+            if self.available:
+                global window
+                window.selected_item = self
+                self.selected()
+                return
             if not self._is_drawing_circle():
                 self._start_draw_circle()
     def on_update(self, delta_time):
         self._draw_circle(delta_time)
         return
+    def _draw_item(self):
+        rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
+        arcade.draw_texture_rect(self.textture, rect)
     def on_draw(self):
         self._draw_back_ground()
         self._draw_item()
@@ -347,21 +356,17 @@ class Item():
 class ItemTower(Item):
     def __init__(self, pos:Vec2):
         super().__init__(pos)
-        self.hold_time = 5
+        self.hold_time = NEW_TOWER_INTERVAL
         self.textture = arcade.load_texture("image/cannon.png")
-    def _draw_item(self):
-        rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
-        arcade.draw_texture_rect(self.textture, rect)
+        self.available = True
     def selected(self):
         print("select tower")
 class ItemMegaBomb(Item):
     def __init__(self, pos):
         super().__init__(pos)
-        self.hold_time = 10
+        self.hold_time = NEW_BOMB_INTERVAL
         self.textture = arcade.load_texture("image/bomb.png")
-    def _draw_item(self):
-        rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
-        arcade.draw_texture_rect(self.textture, rect)
+        self.available = False
     def selected(self):
         print("select bomb")
 
@@ -396,7 +401,8 @@ class SelectSection(arcade.Section):
             for i in self.item:
                 i.check_select(Vec2(x,y))
         elif button == arcade.MOUSE_BUTTON_RIGHT:
-            pass
+            global window
+            window.selected_item = None
         return
     def on_update(self, delta_time):
         for i in self.item:
@@ -412,14 +418,34 @@ class TankattackSection(arcade.Section):
         super().__init__(left=ATTACK_X, bottom=ATTACK_Y, width=ATTACK_VIEW_WIDTH, height=ATTACK_VIEW_HEIGHT, name="attack", accept_mouse_events=True, accept_keyboard_keys=False)
         return
     def on_mouse_press(self, x, y, button, modifiers):
+        global window
         if button == arcade.MOUSE_BUTTON_LEFT:
-            tower = Tower(x,y)
-            tower_list.append(tower)
-            tower_part_list.append(tower.cannon)
-            range_list.append(tower.range_spirte)
+            if window.selected_item:
+                if isinstance(window.selected_item, ItemTower):
+                    tower = Tower(x,y)
+                    tower_list.append(tower)
+                    tower_part_list.append(tower.cannon)
+                    range_list.append(tower.range_spirte)
+                elif isinstance(window.selected_item, ItemMegaBomb):
+                    tank_list.clear()
+                    for t in tower_list:
+                        t.target = None
+                window.selected_item.available = False
+                window.selected_item = None
+                window.set_mouse_visible(True)
         elif button == arcade.MOUSE_BUTTON_RIGHT:
-            pass
+            window.selected_item = None
         return
+    def on_mouse_enter(self, x: float, y: float):
+        global window
+        if window.selected_item:
+            window.set_mouse_visible(False)
+        else:
+            window.set_mouse_visible(True)
+    def on_mouse_leave(self, x: float, y: float):
+        pass
+    def on_mouse_motion(self, x, y, dx, dy):
+        self.mouse_x, self.mouse_y = x,y
     def on_draw(self):
         arcade.draw_lbwh_rectangle_filled(ATTACK_X, ATTACK_Y, self.width, self.height, ATTACK_BG_COLOR)
         global show_range, game_over
@@ -430,12 +456,14 @@ class TankattackSection(arcade.Section):
         bullet_list.draw()
         tower_list.draw()
         tower_part_list.draw()
+        if window.selected_item:
+            rect = arcade.XYWH(self.mouse_x, self.mouse_y, 40, 40)
+            arcade.draw_texture_rect(window.selected_item.textture, rect)
         if game_over:
             self.view.game_over_text.draw()
         return
 
 class TankattackView(arcade.View):
-    new_tank_interval = 1
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
@@ -474,7 +502,7 @@ class TankattackView(arcade.View):
         bullet_list.update()
         tower_list.update()
         cur_time = time.time()
-        if self.new_tank_time == 0 or cur_time - self.new_tank_time >= self.new_tank_interval:
+        if self.new_tank_time == 0 or cur_time - self.new_tank_time >= NEW_TANK_INTERVAL:
             self.new_tank_time = cur_time
             self._new_tank()
         if tank_list:
@@ -505,6 +533,7 @@ class TankattackView(arcade.View):
         return
 
 class TankattackWindow(arcade.Window):
+    selected_item = None
     def __init__(self):
         super().__init__(WINDOW_WIDTH,WINDOW_HEIGHT,"Tank Attack")
         return
