@@ -4,6 +4,7 @@ import math
 import time
 import random
 import arcade
+from pyglet.math import Vec2 as Vec2
 
 castle_list = arcade.SpriteList()
 tank_list = arcade.SpriteList()
@@ -14,6 +15,24 @@ range_list = arcade.SpriteList()
 
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000 
+
+SELECT_VIEW_WIDTH=100
+SELECT_VIEW_HEIGHT=WINDOW_HEIGHT
+SELECT_BG_COLOR=arcade.color.BLUE_GRAY
+SELECT_X, SELECT_Y=0, 0
+
+ITEM_GAP=8
+ITEM_WIDTH=SELECT_VIEW_WIDTH-2*ITEM_GAP
+ITEM_HEIGHT=ITEM_WIDTH
+ITEM_BG_COLOR=arcade.color.BRASS
+ITEM_HOLD_BG_COLOR=arcade.color.GRAY
+
+
+ATTACK_VIEW_WIDTH=WINDOW_WIDTH-SELECT_VIEW_WIDTH
+ATTACK_VIEW_HEIGHT=WINDOW_HEIGHT
+ATTACK_BG_COLOR=arcade.color.DARK_GRAY
+ATTACK_X, ATTACK_Y=SELECT_VIEW_WIDTH, 0
+
 show_range=False
 game_over=False
     
@@ -223,10 +242,196 @@ class Tank(arcade.Sprite):
         if self.health == 0:
             arcade.play_sound(self.explsion_sound)
             self.kill()
-        return
     def kill(self):
         self.range_spirte.kill()
         super().kill()
+
+class HoldPath():
+    def __init__(self, speed, path:list):
+        self._path = path.copy()
+        self.speed = speed
+        self.cursor = None
+        self.passed_path = []
+    def _move_to(self, target, distance):
+       if distance == 0:
+           return self.cursor
+       v = target-self.cursor
+       random = math.atan2(v.y, v.x)
+       self.cursor += Vec2(distance*math.cos(random), distance*math.sin(random))
+       return self.cursor
+    def move(self, delta_time) -> Vec2:
+        if len(self._path) < 1:
+            return None
+        if not self.cursor:
+            self.cursor = self._path.pop(0)
+            self.passed_path.append(self.cursor)
+        target = self._path[0]
+        diff_vec = target - self.cursor
+        distance = diff_vec.distance(Vec2(0,0))
+        real_speed = self.speed / (1/delta_time)
+        # print(f"cursor=Vec2({self.cursor.x:.2f},{self.cursor.y:.2f}), target=Vec2({target.x:.2f},{target.y:.2f}),"
+        #       f"diff_vec=Vec2({diff_vec.x:.2f},{diff_vec.y:.2f}), speed={real_speed:.2f}, dist={distance:.2f}")
+        if real_speed <= distance:
+            return self._move_to(target, real_speed)
+        self.cursor = self._path.pop(0)
+        self.passed_path.append(self.cursor)
+        if not self._path:
+            return None
+        target = self._path[0]
+        # print(f"-------> new cursor=Vec2({self.cursor.x:.2f}, {self.cursor.y:.2f}),",
+        #       f"new target: Vec2({target.x:.2f},{target.y:.2f})",
+        #       "passed_path=", self.passed_path)
+        return self._move_to(target, real_speed-distance)
+
+class Item():
+    hold_time = 0
+    hold_path = None
+    def __init__(self, pos:Vec2):
+        self.width = ITEM_WIDTH
+        self.height = ITEM_HEIGHT
+        self.point_bottom_left = pos
+        self.point_top_right = pos+Vec2(self.width, self.height)
+        self.point_bottom_right=pos+Vec2(self.width, 0)
+        self.point_top_left=pos+Vec2(0, self.height)
+        self.point_center = pos+Vec2(self.width/2, self.height/2)
+        self.point_top_middle = self.point_top_left + Vec2(self.height/2, 0)
+        self.point_center = pos+Vec2(self.width/2, self.height/2)
+        self.hold_polygon = None
+    def _draw_back_ground(self):
+        arcade.draw_lbwh_rectangle_filled(self.point_bottom_left.x, self.point_bottom_left.y, self.width, self.height, ITEM_BG_COLOR)
+        if self.hold_polygon:
+            arcade.draw_polygon_filled(self.hold_polygon, ITEM_HOLD_BG_COLOR)
+    def _start_draw_circle(self):
+        if self.hold_path:
+            print('holding is running')
+            return
+        item_length = self.width *2 + self.height *2
+        speed = item_length / self.hold_time
+        print("start draw circle: item_length=", item_length, "hold_time=", self.hold_time, "spped=", speed)
+        l = [self.point_top_middle, self.point_top_right, self.point_bottom_right, self.point_bottom_left, self.point_top_left, self.point_top_middle]
+        self.hold_path = HoldPath(speed, l)
+        self.cursor = None
+    def _is_drawing_circle(self) -> bool:
+        return bool(self.hold_path)
+    def _draw_circle(self, delta_time):
+        if self.hold_time == 0 or not self.hold_path:
+            return
+        self.hold_polygon = []
+        point_move = self.hold_path.move(delta_time)
+        if not point_move:
+            print('holding is finished')
+            self.hold_path = None
+            self.hold_polygon = None
+            return
+        self.hold_polygon.append(self.point_center)
+        for i in self.hold_path.passed_path:
+            self.hold_polygon.append(i)
+        self.hold_polygon.append(point_move)
+        # poly = f'poly(len={len(self.hold_polygon)}):'
+        # for i in self.hold_polygon:
+        #     poly += f',({i.x:.2f},{i.y:.2f})'
+        # print(poly)
+
+    def check_select(self, point):
+        if arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):
+            self.selected()
+            if not self._is_drawing_circle():
+                self._start_draw_circle()
+    def on_update(self, delta_time):
+        self._draw_circle(delta_time)
+        return
+    def on_draw(self):
+        self._draw_back_ground()
+        self._draw_item()
+
+class ItemTower(Item):
+    def __init__(self, pos:Vec2):
+        super().__init__(pos)
+        self.hold_time = 5
+        self.textture = arcade.load_texture("image/cannon.png")
+    def _draw_item(self):
+        rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
+        arcade.draw_texture_rect(self.textture, rect)
+    def selected(self):
+        print("select tower")
+class ItemMegaBomb(Item):
+    def __init__(self, pos):
+        super().__init__(pos)
+        self.hold_time = 10
+        self.textture = arcade.load_texture("image/bomb.png")
+    def _draw_item(self):
+        rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
+        arcade.draw_texture_rect(self.textture, rect)
+    def selected(self):
+        print("select bomb")
+
+class SelectSection(arcade.Section):
+    item = []
+    PREDEFINE_POSITION = {
+        'left' : {
+            'view': (SELECT_X, SELECT_Y, SELECT_VIEW_WIDTH, SELECT_VIEW_HEIGHT),
+            'item': {'start': Vec2(SELECT_X+ITEM_GAP, SELECT_VIEW_HEIGHT-(ITEM_HEIGHT+ITEM_GAP)), 
+                     'delta': Vec2(0, -(ITEM_GAP+ITEM_HEIGHT))},
+        },
+    }
+    def __init__(self, position='left'):
+        self.position = position
+        view_left, view_bottom, wiew_width, view_height = SelectSection.PREDEFINE_POSITION[position]['view']
+        super().__init__(left=view_left, bottom=view_bottom, width=wiew_width, height=view_height, name='select', accept_mouse_events=True, accept_keyboard_keys=False)
+        item_pos = SelectSection.PREDEFINE_POSITION[position]['item']['start']
+        item_delta = SelectSection.PREDEFINE_POSITION[position]['item']['delta']
+        self.item.append(ItemTower(item_pos))
+        item_pos += item_delta
+        self.item.append(ItemMegaBomb(item_pos))
+    def on_mouse_enter(self, x: float, y: float):
+        global window
+        cursor = window.get_system_mouse_cursor(window.CURSOR_HAND)
+        window.set_mouse_cursor(cursor)
+    def on_mouse_leave(self, x: float, y: float):
+        global window
+        cursor = window.get_system_mouse_cursor(window.CURSOR_DEFAULT)
+        window.set_mouse_cursor(cursor)
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            for i in self.item:
+                i.check_select(Vec2(x,y))
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            pass
+        return
+    def on_update(self, delta_time):
+        for i in self.item:
+            i.on_update(delta_time)
+        return
+    def on_draw(self):
+        arcade.draw_lbwh_rectangle_filled(SELECT_X, SELECT_Y, self.width, self.height, SELECT_BG_COLOR)
+        for i in self.item:
+            i.on_draw()
+
+class TankattackSection(arcade.Section):
+    def __init__(self):
+        super().__init__(left=ATTACK_X, bottom=ATTACK_Y, width=ATTACK_VIEW_WIDTH, height=ATTACK_VIEW_HEIGHT, name="attack", accept_mouse_events=True, accept_keyboard_keys=False)
+        return
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            tower = Tower(x,y)
+            tower_list.append(tower)
+            tower_part_list.append(tower.cannon)
+            range_list.append(tower.range_spirte)
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            pass
+        return
+    def on_draw(self):
+        arcade.draw_lbwh_rectangle_filled(ATTACK_X, ATTACK_Y, self.width, self.height, ATTACK_BG_COLOR)
+        global show_range, game_over
+        if show_range:
+            range_list.draw()
+        castle_list.draw()
+        tank_list.draw()
+        bullet_list.draw()
+        tower_list.draw()
+        tower_part_list.draw()
+        if game_over:
+            self.view.game_over_text.draw()
         return
 
 class TankattackView(arcade.View):
@@ -239,18 +444,10 @@ class TankattackView(arcade.View):
         self.new_tank_time = 0
         self.game_over_text = arcade.Text(f"Game Over", (WINDOW_WIDTH/2), WINDOW_HEIGHT/2 + 40, anchor_x="center", anchor_y="center", color=arcade.color.YELLOW, font_size=46, bold=True, italic=True )
         return
-    def on_key_press(self, key, modifiers):
-        return 
-    def on_key_release(self, key, modifiers):
-        return
-    def on_mouse_press(self, x, y, button, modifiers):
-        if button == arcade.MOUSE_BUTTON_LEFT:
-            tower = Tower(x,y)
-            tower_list.append(tower)
-            tower_part_list.append(tower.cannon)
-            range_list.append(tower.range_spirte)
-        elif button == arcade.MOUSE_BUTTON_RIGHT:
-            pass
+    def setup(self):
+        self.section_manager=arcade.SectionManager(self)
+        self.section_manager.add_section(SelectSection())
+        self.section_manager.add_section(TankattackSection())
         return
     def _new_tank(self):
         random_x = random.randint(0, 400)
@@ -262,6 +459,12 @@ class TankattackView(arcade.View):
         tank = Tank(random_x,random_y,target_sprite=self.castle)
         tank_list.append(tank)
         range_list.append(tank.range_spirte)
+        return
+    def on_show_view(self) -> None:
+        self.section_manager.enable()
+        return
+    def on_hide_view(self) -> None:
+        self.section_manager.disable()
         return
     def on_update(self, delta_time):
         global game_over
@@ -297,17 +500,6 @@ class TankattackView(arcade.View):
             bullet.check_hit(castle_list)
         return
     def on_draw(self):
-        global show_range, game_over
-        self.clear()
-        if show_range:
-            range_list.draw()
-        castle_list.draw()
-        tank_list.draw()
-        bullet_list.draw()
-        tower_list.draw()
-        tower_part_list.draw()
-        if game_over:
-            self.game_over_text.draw()
         # bullet_list.draw_hit_boxes(arcade.color.RED)
         # tank_list.draw_hit_boxes(arcade.color.RED)
         return
@@ -330,8 +522,10 @@ class TankattackWindow(arcade.Window):
 
 def main():
     print("Game Start")
+    global window
     window = TankattackWindow()
     view = TankattackView()
+    view.setup()
     window.show_view(view)
     arcade.run()
     return
