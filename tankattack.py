@@ -13,8 +13,13 @@ tower_list = arcade.SpriteList()
 tower_part_list = arcade.SpriteList()
 range_list = arcade.SpriteList()
 
-NEW_TANK_INTERVAL=10
+NANO_SECOND = 1_000_000_000
+
+NEW_TANK_INTERVAL=5
+TANK_SHOOT_INTERVAL=2
+
 NEW_TOWER_INTERVAL=5
+TOWER_SOOT_INTERVAL=2
 NEW_BOMB_INTERVAL=10
 
 WINDOW_WIDTH =1600 
@@ -113,11 +118,11 @@ class Tower(arcade.SpriteCircle):
     target = None
     shoot_time = 0
     base_radius = 10
-    shoot_interval = 2
     tower_color = arcade.color.VIOLET_BLUE
-    def __init__(self, x, y, health=3, range=400):
+    def __init__(self, x, y, shoot_interval=TOWER_SOOT_INTERVAL, health=3, range=400):
         self.health = health
         self.range = range
+        self.shoot_interval = shoot_interval *NANO_SECOND
         super().__init__(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_YELLOW, center_x=x, center_y=y)
         self.cannon_width=self.base_radius*2
@@ -140,7 +145,7 @@ class Tower(arcade.SpriteCircle):
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
-        current_time = time.time()
+        current_time = time.time_ns()
         if self.target:
             if self.shoot_time == 0 or current_time - self.shoot_time >= self.shoot_interval:
                 self.shoot_time = current_time
@@ -167,7 +172,7 @@ class Tower(arcade.SpriteCircle):
 class Tank(arcade.Sprite):
     final_target_sprite=None
     target_sprite = None
-    def __init__(self, x, y, speed = 1, health = 3, range=300, shoot_interval=2, target_sprite:arcade.Sprite=None):
+    def __init__(self, x, y, speed = 1, health = 3, range=300, shoot_interval=TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
         super().__init__()
         super().append_texture(arcade.load_texture("image/tank.blue.png"))
         super().append_texture(arcade.load_texture("image/tank.yellow.png"))
@@ -179,8 +184,8 @@ class Tank(arcade.Sprite):
         self.center_y = y
         self.speed = speed
         self.health = health
-        self.shoot_interval = shoot_interval
-        self.shoot_time=time.time()
+        self.shoot_interval = shoot_interval * NANO_SECOND
+        self.shoot_time=time.time_ns()
         self.shoot_sound = arcade.sound.load_sound(":resources:sounds/laser1.wav")
         self.explsion_sound = arcade.sound.load_sound(":resources:/sounds/explosion2.wav")
         if target_sprite:
@@ -216,7 +221,7 @@ class Tank(arcade.Sprite):
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
-        current_time = time.time()
+        current_time = time.time_ns()
         if current_time - self.shoot_time >= self.shoot_interval:
             self.shoot()
             self.shoot_time = current_time
@@ -501,8 +506,9 @@ class TankattackView(arcade.View):
         tank_list.update()
         bullet_list.update()
         tower_list.update()
-        cur_time = time.time()
-        if self.new_tank_time == 0 or cur_time - self.new_tank_time >= NEW_TANK_INTERVAL:
+        cur_time = time.time_ns()
+        new_tank_interval_ns = NEW_TANK_INTERVAL * NANO_SECOND
+        if self.new_tank_time == 0 or cur_time - self.new_tank_time >= new_tank_interval_ns:
             self.new_tank_time = cur_time
             self._new_tank()
         if tank_list:
