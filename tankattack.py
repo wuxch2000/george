@@ -26,9 +26,9 @@ WINDOW_WIDTH =1600
 WINDOW_HEIGHT=1000 
 
 SELECT_VIEW_WIDTH=100
-SELECT_VIEW_HEIGHT=WINDOW_HEIGHT
+SELECT_VIEW_HEIGHT=WINDOW_HEIGHT/2
+SELECT_VIEW_X, SELECT_VIEW_Y=0, WINDOW_HEIGHT/2
 SELECT_BG_COLOR=arcade.color.BLUE_GRAY
-SELECT_X, SELECT_Y=0, 0
 
 ITEM_GAP=8
 ITEM_WIDTH=SELECT_VIEW_WIDTH-2*ITEM_GAP
@@ -37,15 +37,26 @@ ITEM_BG_COLOR=arcade.color.BRASS
 ITEM_BG_COLOR_AVAILABLE=arcade.color.CELADON_GREEN
 ITEM_HOLD_BG_COLOR=arcade.color.GRAY
 
+SCORE_VIEW_WIDTH=SELECT_VIEW_WIDTH
+SCORE_VIEW_HEIGHT=WINDOW_HEIGHT/2
+SCORE_VIEW_X, SCORE_VIEW_Y = 0, 0
+SCORE_BG_COLOR=arcade.color.BLEU_DE_FRANCE
+
+SCORE_TEXT_X_GAP=8
+SCORE_TEXT_Y_GAP=30
+SCORE_TEXT_COLOR=arcade.color.YELLOW
+SCORE_TEXT_SIZE=12
 
 ATTACK_VIEW_WIDTH=WINDOW_WIDTH-SELECT_VIEW_WIDTH
 ATTACK_VIEW_HEIGHT=WINDOW_HEIGHT
 ATTACK_BG_COLOR=arcade.color.DARK_GRAY
 ATTACK_X, ATTACK_Y=SELECT_VIEW_WIDTH, 0
 
+CASTLE_HEALTH = 20
+
 show_range=False
 game_over=False
-    
+ 
 class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
         super().__init__(center_x=x, center_y=y, width=width, height=heigh, angle=angle, color=arcade.color.ROSE_EBONY)
@@ -53,15 +64,15 @@ class Brick(arcade.SpriteSolidColor):
 
 class Castle(arcade.Sprite):
     castle_radius = 100
-    health = 20
     castle_color = arcade.color.DARK_BLUE
     def __init__(self):
+        global window
         super().__init__()
         # self.texture=arcade.make_circle_texture(self.castle_radius , self.castle_color)
         self._new_radius()
         self.center_x=WINDOW_WIDTH/2
         self.center_y=WINDOW_HEIGHT/2
-        self.delta_radius = int(self.castle_radius/self.health)
+        self.delta_radius = int(self.castle_radius/window.castle_health)
         return
     def _new_radius(self):
         if self.castle_radius > 0:
@@ -69,12 +80,11 @@ class Castle(arcade.Sprite):
             # self.hit_box = self.texture.hit_box_points
         return
     def hit(self):
-        global game_over
-        self.health -= 1
+        global game_over, window
+        window.castle_health -= 1
         self.castle_radius -= self.delta_radius
-        print(f"castle: health={self.health}, {self.castle_radius}")
         self._new_radius()
-        if self.health == 0:
+        if window.castle_health == 0:
             print("Castle is destroied")
             game_over = True
             self.kill()
@@ -130,6 +140,9 @@ class Tower(arcade.SpriteCircle):
         self.cannon = arcade.SpriteSolidColor(color=self.tower_color, center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
         self.shoot_sound = arcade.sound.load_sound(":resources:/sounds/hurt2.wav")
         self.explsion_sound = arcade.sound.load_sound(":resources:/sounds/explosion1.wav")
+        global window
+        window.tower_total += 1
+        window.tower_number += 1
         return
     def aim(self, s:arcade.Sprite):
         r = math.atan2(s.center_y - self.cannon.center_y, s.center_x - self.cannon.center_x)
@@ -164,9 +177,11 @@ class Tower(arcade.SpriteCircle):
             self.kill()
         return
     def kill(self):
+        global window
         self.cannon.kill()
         self.range_spirte.kill()
         super().kill()
+        window.tower_number -= 1
         return
 
 class Tank(arcade.Sprite):
@@ -191,6 +206,9 @@ class Tank(arcade.Sprite):
         if target_sprite:
             self.final_target_sprite = target_sprite
             self._set_dest_pos()
+        global window
+        window.tank_number += 1
+        window.tank_total += 1
         return
     def set_radians(self, r):
         self.radians = (math.pi/2)-r
@@ -244,8 +262,10 @@ class Tank(arcade.Sprite):
             arcade.play_sound(self.explsion_sound)
             self.kill()
     def kill(self):
+        global window
         self.range_spirte.kill()
         super().kill()
+        window.tank_number -= 1
 
 class HoldPath():
     def __init__(self, speed, path:list):
@@ -377,19 +397,25 @@ class ItemMegaBomb(Item):
 
 class SelectSection(arcade.Section):
     item = []
-    PREDEFINE_POSITION = {
-        'left' : {
-            'view': (SELECT_X, SELECT_Y, SELECT_VIEW_WIDTH, SELECT_VIEW_HEIGHT),
-            'item': {'start': Vec2(SELECT_X+ITEM_GAP, SELECT_VIEW_HEIGHT-(ITEM_HEIGHT+ITEM_GAP)), 
+    _config = {
+        'top-left' : {
+            'view': {'bottom-left': Vec2(SELECT_VIEW_X, SELECT_VIEW_Y), 
+                     'width':SELECT_VIEW_WIDTH,
+                     'height': SELECT_VIEW_HEIGHT},
+            'item': {'start': Vec2(SELECT_VIEW_X+ITEM_GAP, WINDOW_HEIGHT-(ITEM_HEIGHT+ITEM_GAP)), 
                      'delta': Vec2(0, -(ITEM_GAP+ITEM_HEIGHT))},
+            'bg_color': SELECT_BG_COLOR,
         },
     }
-    def __init__(self, position='left'):
+    def __init__(self, position='top-left'):
         self.position = position
-        view_left, view_bottom, wiew_width, view_height = SelectSection.PREDEFINE_POSITION[position]['view']
-        super().__init__(left=view_left, bottom=view_bottom, width=wiew_width, height=view_height, name='select', accept_mouse_events=True, accept_keyboard_keys=False)
-        item_pos = SelectSection.PREDEFINE_POSITION[position]['item']['start']
-        item_delta = SelectSection.PREDEFINE_POSITION[position]['item']['delta']
+        self.config = SelectSection._config[position]
+        self.bottom_left = self.config['view']['bottom-left']
+        self.view_width = self.config['view']['width']
+        self.view_height = self.config['view']['height']
+        super().__init__(left=self.bottom_left.x, bottom=self.bottom_left.y, width=self.view_width, height=self.view_height, name='select', accept_mouse_events=True, accept_keyboard_keys=False)
+        item_pos = self.config['item']['start']
+        item_delta = self.config['item']['delta']
         self.item.append(ItemTower(item_pos))
         item_pos += item_delta
         self.item.append(ItemMegaBomb(item_pos))
@@ -414,9 +440,60 @@ class SelectSection(arcade.Section):
             i.on_update(delta_time)
         return
     def on_draw(self):
-        arcade.draw_lbwh_rectangle_filled(SELECT_X, SELECT_Y, self.width, self.height, SELECT_BG_COLOR)
+        arcade.draw_lbwh_rectangle_filled(self.bottom_left.x, self.bottom_left.y, self.view_width, self.view_height, self.config['bg_color'])
         for i in self.item:
             i.on_draw()
+
+class ScoreSection(arcade.Section):
+    _config = {
+        'bottom-left' : {
+            'view': {'bottom-left': Vec2(SCORE_VIEW_X, SCORE_VIEW_Y), 
+                     'width':SCORE_VIEW_WIDTH,
+                     'height': SCORE_VIEW_HEIGHT},
+            'text': {'start': Vec2(SCORE_VIEW_X+SCORE_TEXT_X_GAP, SCORE_VIEW_HEIGHT-SCORE_TEXT_Y_GAP),
+                     'delta': Vec2(0, -(SCORE_TEXT_Y_GAP)),
+                     'font-size':SCORE_TEXT_SIZE,
+                     'color':SCORE_TEXT_COLOR,
+                     'bold': True,
+                     },
+            'bg_color': SCORE_BG_COLOR,
+        },
+    }
+    def _new_text(str, pos, text_config):
+        return arcade.Text(str, pos.x , pos.y, color=text_config['color'], font_size=text_config['font-size'], bold=text_config['bold'])
+    def __init__(self, position='bottom-left'):
+        global window 
+        self.position = position
+        self.config = ScoreSection._config[position]
+        self.bottom_left = self.config['view']['bottom-left']
+        self.view_width = self.config['view']['width']
+        self.view_height = self.config['view']['height']
+        super().__init__(left=self.bottom_left.x, bottom=self.bottom_left.y, width=self.view_width, height=self.view_height, name='score', accept_mouse_events=True, accept_keyboard_keys=False)
+        self.text_list = []
+        text_config=self.config['text']
+        text_vec = text_config['start']
+        self.castle_health_text = ScoreSection._new_text( f"Castle: {window.castle_health}", text_vec, text_config)
+        self.text_list.append(self.castle_health_text)
+        text_vec += text_config['delta']
+        self.tank_text = ScoreSection._new_text( f"Tank  : {window.tank_number}/{window.tank_total}", text_vec, text_config)
+        self.text_list.append(self.tank_text)
+        text_vec += text_config['delta']
+        self.tower_text = ScoreSection._new_text(f"Tower : {window.tower_number}/{window.tower_total}", text_vec, text_config)
+        self.text_list.append(self.tower_text)
+        text_vec += text_config['delta']
+        self.bomb_text = ScoreSection._new_text( f"Bomb  : {window.bomb_number}", text_vec, text_config)
+        self.text_list.append(self.bomb_text)
+    def on_update(self, delta_time):
+        self.castle_health_text.text = f"Castle: {window.castle_health}"
+        self.tank_text.text          = f"Tank  : {window.tank_number}/{window.tank_total}"
+        self.tower_text.text         = f"Tower : {window.tower_number}/{window.tower_total}"
+        self.bomb_text.text          = f"Bomb  : {window.bomb_number}"
+        return super().on_update(delta_time)
+    def on_draw(self):
+        arcade.draw_lbwh_rectangle_filled(self.bottom_left.x, self.bottom_left.y, self.view_width, self.view_height, self.config['bg_color'])
+        for t in self.text_list:
+            t.draw()
+        pass
 
 class TankattackSection(arcade.Section):
     def __init__(self):
@@ -435,6 +512,7 @@ class TankattackSection(arcade.Section):
                     tank_list.clear()
                     for t in tower_list:
                         t.target = None
+                    window.bomb_number += 1
                 window.selected_item.available = False
                 window.selected_item = None
                 window.set_mouse_visible(True)
@@ -480,9 +558,11 @@ class TankattackView(arcade.View):
     def setup(self):
         self.section_manager=arcade.SectionManager(self)
         self.section_manager.add_section(SelectSection())
+        self.section_manager.add_section(ScoreSection())
         self.section_manager.add_section(TankattackSection())
         return
     def _new_tank(self):
+        global window
         random_x = random.randint(0, 400)
         random_y = random.randint(0, 400)
         if random.randint(-1,1) >= 0:
@@ -540,6 +620,10 @@ class TankattackView(arcade.View):
 
 class TankattackWindow(arcade.Window):
     selected_item = None
+    tank_number, tank_total = 0, 0
+    tower_number, tower_total = 0, 0
+    bomb_number = 0
+    castle_health = CASTLE_HEALTH
     def __init__(self):
         super().__init__(WINDOW_WIDTH,WINDOW_HEIGHT,"Tank Attack")
         return
