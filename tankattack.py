@@ -128,16 +128,24 @@ class Tower(arcade.SpriteCircle):
     target = None
     shoot_time = 0
     base_radius = 10
-    tower_color = arcade.color.VIOLET_BLUE
+    health_color = [
+        arcade.color.RED,
+        arcade.color.RED,
+        arcade.color.YELLOW,
+        arcade.color.VIOLET_BLUE,
+    ]
+    def _color_by_health(health):
+        if health < len(Tower.health_color):
+            return Tower.health_color[health]
+        return arcade.color.GRAY
     def __init__(self, x, y, shoot_interval=TOWER_SOOT_INTERVAL, health=3, range=400):
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval *NANO_SECOND
-        super().__init__(self.base_radius, color=self.tower_color, center_x=x, center_y=y)
+        super().__init__(self.base_radius, color=Tower._color_by_health(self.health), center_x=x, center_y=y)
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_YELLOW, center_x=x, center_y=y)
-        self.cannon_width=self.base_radius*2
-        self.cannon_height=self.base_radius/2
-        self.cannon = arcade.SpriteSolidColor(color=self.tower_color, center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
+        self.cannon_width, self.cannon_height=self.base_radius*2,self.base_radius/2
+        self.cannon = arcade.SpriteSolidColor(color=Tower._color_by_health(self.health), center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
         self.shoot_sound = arcade.sound.load_sound(":resources:/sounds/hurt2.wav")
         self.explsion_sound = arcade.sound.load_sound(":resources:/sounds/explosion1.wav")
         global window
@@ -166,12 +174,8 @@ class Tower(arcade.SpriteCircle):
         return
     def hit(self):
         self.health-=1
-        if self.health == 2:
-            self.color = arcade.color.YELLOW
-            self.cannon.color = arcade.color.YELLOW
-        elif self.health == 1:
-            self.color = arcade.color.RED
-            self.cannon.color = arcade.color.RED
+        color = Tower._color_by_health(self.health)
+        self.color, self.cannon.color = color,color
         if self.health == 0:
             arcade.play_sound(self.explsion_sound)
             self.kill()
@@ -195,8 +199,7 @@ class Tank(arcade.Sprite):
         super().set_texture(0)
         self.range = range
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_TAN, center_x=x, center_y=y)
-        self.center_x = x
-        self.center_y = y
+        self.center_x, self.center_y = x, y
         self.speed = speed
         self.health = health
         self.shoot_interval = shoot_interval * NANO_SECOND
