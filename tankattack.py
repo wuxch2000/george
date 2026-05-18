@@ -68,7 +68,6 @@ class Castle(arcade.Sprite):
     def __init__(self):
         global window
         super().__init__()
-        # self.texture=arcade.make_circle_texture(self.castle_radius , self.castle_color)
         self._new_radius()
         self.center_x=WINDOW_WIDTH/2
         self.center_y=WINDOW_HEIGHT/2
@@ -78,7 +77,6 @@ class Castle(arcade.Sprite):
     def _new_radius(self):
         if self.castle_radius > 0:
             self.texture = arcade.make_circle_texture(self.castle_radius , self.castle_color)
-            # self.hit_box = self.texture.hit_box_points
         return
     def hit(self):
         global game_over, window
