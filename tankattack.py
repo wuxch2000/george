@@ -73,6 +73,7 @@ class Castle(arcade.Sprite):
         self.center_x=WINDOW_WIDTH/2
         self.center_y=WINDOW_HEIGHT/2
         self.delta_radius = int(self.castle_radius/window.castle_health)
+        self.hit_sound = arcade.sound.load_sound(":resources:/sounds/hurt5.wav")
         return
     def _new_radius(self):
         if self.castle_radius > 0:
@@ -84,6 +85,7 @@ class Castle(arcade.Sprite):
         window.castle_health -= 1
         self.castle_radius -= self.delta_radius
         self._new_radius()
+        arcade.play_sound(self.hit_sound)
         if window.castle_health == 0:
             print("Castle is destroied")
             game_over = True
@@ -459,8 +461,8 @@ class ScoreSection(arcade.Section):
             'bg_color': SCORE_BG_COLOR,
         },
     }
-    def _new_text(str, pos, text_config):
-        return arcade.Text(str, pos.x , pos.y, color=text_config['color'], font_size=text_config['font-size'], bold=text_config['bold'])
+    def _append_text(list, key, str, pos, text_config):
+        list[key]=arcade.Text(str, pos.x , pos.y, color=text_config['color'], font_size=text_config['font-size'], bold=text_config['bold'])
     def __init__(self, position='bottom-left'):
         global window 
         self.position = position
@@ -469,35 +471,32 @@ class ScoreSection(arcade.Section):
         self.view_width = self.config['view']['width']
         self.view_height = self.config['view']['height']
         super().__init__(left=self.bottom_left.x, bottom=self.bottom_left.y, width=self.view_width, height=self.view_height, name='score', accept_mouse_events=True, accept_keyboard_keys=False)
-        self.text_list = []
+        self.text_list = {}
         text_config=self.config['text']
         text_vec = text_config['start']
-        self.castle_health_text = ScoreSection._new_text( f"Castle: {window.castle_health}", text_vec, text_config)
-        self.text_list.append(self.castle_health_text)
+        ScoreSection._append_text(self.text_list,'castle', f"Castle: {window.castle_health}", text_vec, text_config)
         text_vec += text_config['delta']
-        self.tank_text = ScoreSection._new_text( f"Tank  : {window.tank_number}/{window.tank_total}", text_vec, text_config)
-        self.text_list.append(self.tank_text)
+        ScoreSection._append_text(self.text_list,'tank', f"Tank  : {window.tank_number}/{window.tank_total}", text_vec, text_config)
         text_vec += text_config['delta']
-        self.tower_text = ScoreSection._new_text(f"Tower : {window.tower_number}/{window.tower_total}", text_vec, text_config)
-        self.text_list.append(self.tower_text)
+        ScoreSection._append_text(self.text_list,'tower', f"Tower : {window.tower_number}/{window.tower_total}", text_vec, text_config)
         text_vec += text_config['delta']
-        self.bomb_text = ScoreSection._new_text( f"Bomb  : {window.bomb_number}", text_vec, text_config)
-        self.text_list.append(self.bomb_text)
+        ScoreSection._append_text(self.text_list,'bomb', f"Bomb  : {window.bomb_number}", text_vec, text_config)
     def on_update(self, delta_time):
-        self.castle_health_text.text = f"Castle: {window.castle_health}"
-        self.tank_text.text          = f"Tank  : {window.tank_number}/{window.tank_total}"
-        self.tower_text.text         = f"Tower : {window.tower_number}/{window.tower_total}"
-        self.bomb_text.text          = f"Bomb  : {window.bomb_number}"
+        self.text_list['castle'].text = f"Castle: {window.castle_health}"
+        self.text_list['tank'].text   = f"Tank  : {window.tank_number}/{window.tank_total}"
+        self.text_list['tower'].text  = f"Tower : {window.tower_number}/{window.tower_total}"
+        self.text_list['bomb'].text   = f"Bomb  : {window.bomb_number}"
         return super().on_update(delta_time)
     def on_draw(self):
         arcade.draw_lbwh_rectangle_filled(self.bottom_left.x, self.bottom_left.y, self.view_width, self.view_height, self.config['bg_color'])
-        for t in self.text_list:
+        for t in self.text_list.values():
             t.draw()
         pass
 
 class TankattackSection(arcade.Section):
     def __init__(self):
         super().__init__(left=ATTACK_X, bottom=ATTACK_Y, width=ATTACK_VIEW_WIDTH, height=ATTACK_VIEW_HEIGHT, name="attack", accept_mouse_events=True, accept_keyboard_keys=False)
+        self.bomb_sound = arcade.sound.load_sound(":resources:/sounds/upgrade4.wav")
         return
     def on_mouse_press(self, x, y, button, modifiers):
         global window
@@ -509,10 +508,14 @@ class TankattackSection(arcade.Section):
                     tower_part_list.append(tower.cannon)
                     range_list.append(tower.range_spirte)
                 elif isinstance(window.selected_item, ItemMegaBomb):
+                    for t in tank_list:
+                        t.kill()
                     tank_list.clear()
+                    range_list.clear()
                     for t in tower_list:
                         t.target = None
                     window.bomb_number += 1
+                    arcade.play_sound(self.bomb_sound)
                 window.selected_item.available = False
                 window.selected_item = None
                 window.set_mouse_visible(True)
