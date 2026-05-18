@@ -361,7 +361,6 @@ class Item():
         # for i in self.hold_polygon:
         #     poly += f',({i.x:.2f},{i.y:.2f})'
         # print(poly)
-
     def check_select(self, point):
         if arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):
             if self.available:
