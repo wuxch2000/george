@@ -16,14 +16,18 @@ range_list = arcade.SpriteList()
 NANO_SECOND = 1_000_000_000
 
 NEW_TANK_INTERVAL=5
+NEW_TOWER_INTERVAL=3
 TANK_SHOOT_INTERVAL=2
 
-NEW_TOWER_INTERVAL=5
-TOWER_SOOT_INTERVAL=2
+STARTING_COIN_VALUE = 500
+COIN_FOR_TANK = 100
+COIN_FOR_TOWER = 100
+COIN_FOR_BOMB = 200
+TOWER_SHOOT_INTERVAL=0.5
 NEW_BOMB_INTERVAL=10
 
 WINDOW_WIDTH =1600 
-WINDOW_HEIGHT=1000 
+WINDOW_HEIGHT=1000
 
 SELECT_VIEW_WIDTH=100
 SELECT_VIEW_HEIGHT=WINDOW_HEIGHT/2
@@ -138,7 +142,7 @@ class Tower(arcade.SpriteCircle):
         if health < len(Tower.health_color):
             return Tower.health_color[health]
         return arcade.color.GRAY
-    def __init__(self, x, y, shoot_interval=TOWER_SOOT_INTERVAL, health=3, range=400):
+    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=3, range=400):
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval *NANO_SECOND
@@ -151,6 +155,7 @@ class Tower(arcade.SpriteCircle):
         global window
         window.tower_total += 1
         window.tower_number += 1
+        window.coin -= COIN_FOR_TOWER
         return
     def aim(self, s:arcade.Sprite):
         r = math.atan2(s.center_y - self.cannon.center_y, s.center_x - self.cannon.center_x)
@@ -168,6 +173,11 @@ class Tower(arcade.SpriteCircle):
     def update(self, delta_time: float = 1/60):
         current_time = time.time_ns()
         if self.target:
+            global window
+            if window.coin >= 100:
+                self.shoot_interval = 2* NANO_SECOND
+            else:
+                self.shoot_interval = 3600 * NANO_SECOND
             if self.shoot_time == 0 or current_time - self.shoot_time >= self.shoot_interval:
                 self.shoot_time = current_time
                 self.shoot()
@@ -269,6 +279,7 @@ class Tank(arcade.Sprite):
         self.range_spirte.kill()
         super().kill()
         window.tank_number -= 1
+        window.coin += COIN_FOR_TANK
 
 class HoldPath():
     def __init__(self, speed, path:list):
@@ -362,17 +373,21 @@ class Item():
         #     poly += f',({i.x:.2f},{i.y:.2f})'
         # print(poly)
     def check_select(self, point):
-        if arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):
+        if arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):           
             if self.available:
+                self.selected()
                 global window
                 window.selected_item = self
-                self.selected()
+                return
+            if not self.can_build():
                 return
             if not self._is_drawing_circle():
                 self._start_draw_circle()
     def on_update(self, delta_time):
         self._draw_circle(delta_time)
         return
+    def selected(self):
+        pass
     def _draw_item(self):
         rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
         arcade.draw_texture_rect(self.textture, rect)
@@ -388,6 +403,13 @@ class ItemTower(Item):
         self.available = True
     def selected(self):
         print("select tower")
+    def can_build(self) -> bool:
+        global window
+        if window.coin > COIN_FOR_TOWER:
+            return True
+        else:
+            return False
+
 class ItemMegaBomb(Item):
     def __init__(self, pos):
         super().__init__(pos)
@@ -396,6 +418,12 @@ class ItemMegaBomb(Item):
         self.available = False
     def selected(self):
         print("select bomb")
+    def can_build(self) -> bool:
+        global window
+        if window.coin > COIN_FOR_BOMB:
+            return True
+        else:
+            return False
 
 class SelectSection(arcade.Section):
     item = []
@@ -481,11 +509,14 @@ class ScoreSection(arcade.Section):
         ScoreSection._append_text(self.text_list,'tower', f"Tower : {window.tower_number}/{window.tower_total}", text_vec, text_config)
         text_vec += text_config['delta']
         ScoreSection._append_text(self.text_list,'bomb', f"Bomb  : {window.bomb_number}", text_vec, text_config)
+        text_vec += text_config['delta']
+        ScoreSection._append_text(self.text_list,'coin', f"Coin  : {window.coin}", text_vec, text_config)
     def on_update(self, delta_time):
         self.text_list['castle'].text = f"Castle: {window.castle_health}"
         self.text_list['tank'].text   = f"Tank  : {window.tank_number}/{window.tank_total}"
         self.text_list['tower'].text  = f"Tower : {window.tower_number}/{window.tower_total}"
         self.text_list['bomb'].text   = f"Bomb  : {window.bomb_number}"
+        self.text_list['coin'].text   = f"Coin  : {window.coin}"
         return super().on_update(delta_time)
     def on_draw(self):
         arcade.draw_lbwh_rectangle_filled(self.bottom_left.x, self.bottom_left.y, self.view_width, self.view_height, self.config['bg_color'])
@@ -627,6 +658,7 @@ class TankattackWindow(arcade.Window):
     tower_number, tower_total = 0, 0
     bomb_number = 0
     castle_health = CASTLE_HEALTH
+    coin = STARTING_COIN_VALUE
     def __init__(self):
         super().__init__(WINDOW_WIDTH,WINDOW_HEIGHT,"Tank Attack")
         return
