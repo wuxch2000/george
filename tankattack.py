@@ -528,6 +528,7 @@ class TankattackSection(arcade.Section):
     def __init__(self):
         super().__init__(left=ATTACK_X, bottom=ATTACK_Y, width=ATTACK_VIEW_WIDTH, height=ATTACK_VIEW_HEIGHT, name="attack", accept_mouse_events=True, accept_keyboard_keys=False)
         self.bomb_sound = arcade.sound.load_sound(":resources:/sounds/upgrade4.wav")
+        self.mouse_x, self.mouse_y = None, None
         return
     def on_mouse_press(self, x, y, button, modifiers):
         global window
@@ -573,7 +574,7 @@ class TankattackSection(arcade.Section):
         bullet_list.draw()
         tower_list.draw()
         tower_part_list.draw()
-        if window.selected_item:
+        if window.selected_item and self.mouse_x is not None and self.mouse_y is not None:
             rect = arcade.XYWH(self.mouse_x, self.mouse_y, 40, 40)
             arcade.draw_texture_rect(window.selected_item.textture, rect)
         if game_over:
