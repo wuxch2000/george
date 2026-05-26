@@ -94,8 +94,7 @@ class Castle(arcade.Sprite):
             self.kill()
 
 class Bullet(arcade.Sprite):
-    shooter = None
-    def __init__(self, x, y, target_x, target_y, shooter:arcade.Sprite, speed = 5, distance=0):
+    def __init__(self, x, y, target_x, target_y, speed, distance):
         super().__init__(":resources:images/space_shooter/laserBlue01.png", 0.8)
         r = math.atan2(target_y - y, target_x - x)
         self.center_x = x+distance*math.cos(r)
@@ -104,12 +103,9 @@ class Bullet(arcade.Sprite):
         self.radians = -r
         self.change_x = self.speed * math.cos(r)
         self.change_y = self.speed * math.sin(r)
-        self.shooter = shooter
-        return
     def update(self, delta_time: float = 1/60):
         self.center_x += self.change_x
         self.center_y += self.change_y
-        return
     def out_of_view(self):
         if self.top >= WINDOW_HEIGHT or self.bottom <= 0 or self.left <=0 or self.right >= WINDOW_WIDTH:
             return True
@@ -122,12 +118,22 @@ class Bullet(arcade.Sprite):
             return
         hit_list = self.collides_with_list(sl)
         for s in hit_list:
-            if s is self.shooter:
+            if not self._can_be_hit(s):
                 continue
             s.hit()
             self.kill()
             break
         return
+class BulletFromTank(Bullet):
+    def __init__(self, x, y, target_x, target_y, speed = 5, distance=0):
+        super().__init__(x,y,target_x,target_y, speed, distance)
+    def _can_be_hit(self, s:arcade.Sprite):
+        return not isinstance(s, Tank)
+class BulletFromTower(Bullet):
+    def __init__(self, x, y, target_x, target_y, speed = 5, distance=0):
+        super().__init__(x,y,target_x,target_y, speed, distance)
+    def _can_be_hit(self, s:arcade.Sprite):
+        return isinstance(s,Tank)
 class Tower(arcade.SpriteCircle):
     target = None
     shoot_time = 0
@@ -155,7 +161,6 @@ class Tower(arcade.SpriteCircle):
         global window
         window.tower_total += 1
         window.tower_number += 1
-        window.coin -= COIN_FOR_TOWER
         return
     def aim(self, s:arcade.Sprite):
         r = math.atan2(s.center_y - self.cannon.center_y, s.center_x - self.cannon.center_x)
@@ -167,7 +172,7 @@ class Tower(arcade.SpriteCircle):
     def shoot(self):
         if self.target:
             arcade.play_sound(self.shoot_sound)
-            bullet = Bullet(self.center_x, self.center_y, self.target.center_x, self.target.center_y, self)
+            bullet = BulletFromTower(self.center_x, self.center_y, self.target.center_x, self.target.center_y)
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
@@ -201,7 +206,7 @@ class Tower(arcade.SpriteCircle):
 class Tank(arcade.Sprite):
     final_target_sprite=None
     target_sprite = None
-    def __init__(self, x, y, speed = 1, health = 3, range=300, shoot_interval=TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
+    def __init__(self, x, y, speed = 1, health = 3, range=600, shoot_interval=TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
         super().__init__()
         super().append_texture(arcade.load_texture("image/tank.blue.png"))
         super().append_texture(arcade.load_texture("image/tank.yellow.png"))
@@ -246,9 +251,9 @@ class Tank(arcade.Sprite):
         s = self.target_sprite
         if not s:
             s = self.final_target_sprite
-        if s:
+        if s and arcade.get_distance_between_sprites(self, s) <= self.range:
             arcade.play_sound(self.shoot_sound)
-            bullet = Bullet(self.center_x, self.center_y, s.center_x, s.center_y, self)
+            bullet = BulletFromTank(self.center_x, self.center_y, s.center_x, s.center_y)
             bullet_list.append(bullet)
         return
     def update(self, delta_time: float = 1/60):
@@ -372,17 +377,25 @@ class Item():
         # for i in self.hold_polygon:
         #     poly += f',({i.x:.2f},{i.y:.2f})'
         # print(poly)
+    def _can_build(self) -> bool:
+        global window
+        return window.coin > self.price
+    def _build(self):
+        global window
+        if not self._can_build():
+            return
+        window.coin -= self.price
+        if not self._is_drawing_circle():
+            self._start_draw_circle()
     def check_select(self, point):
-        if arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):           
-            if self.available:
-                self.selected()
-                global window
-                window.selected_item = self
-                return
-            if not self.can_build():
-                return
-            if not self._is_drawing_circle():
-                self._start_draw_circle()
+        global window
+        if not arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):           
+            return
+        if self.available:
+            self.selected()
+            window.selected_item = self
+            return
+        self._build()
     def on_update(self, delta_time):
         self._draw_circle(delta_time)
         return
@@ -401,14 +414,9 @@ class ItemTower(Item):
         self.hold_time = NEW_TOWER_INTERVAL
         self.textture = arcade.load_texture("image/cannon.png")
         self.available = True
+        self.price = COIN_FOR_TOWER
     def selected(self):
         print("select tower")
-    def can_build(self) -> bool:
-        global window
-        if window.coin > COIN_FOR_TOWER:
-            return True
-        else:
-            return False
 
 class ItemMegaBomb(Item):
     def __init__(self, pos):
@@ -416,14 +424,9 @@ class ItemMegaBomb(Item):
         self.hold_time = NEW_BOMB_INTERVAL
         self.textture = arcade.load_texture("image/bomb.png")
         self.available = False
+        self.price = COIN_FOR_BOMB
     def selected(self):
         print("select bomb")
-    def can_build(self) -> bool:
-        global window
-        if window.coin > COIN_FOR_BOMB:
-            return True
-        else:
-            return False
 
 class SelectSection(arcade.Section):
     item = []
