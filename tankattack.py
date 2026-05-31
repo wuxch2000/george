@@ -40,6 +40,8 @@ ITEM_HEIGHT=ITEM_WIDTH
 ITEM_BG_COLOR=arcade.color.BRASS
 ITEM_BG_COLOR_AVAILABLE=arcade.color.CELADON_GREEN
 ITEM_HOLD_BG_COLOR=arcade.color.GRAY
+ITEM_HOVER_COLOR=arcade.color.WHITE_SMOKE
+ITEM_HOVER_FONT=10
 
 SCORE_VIEW_WIDTH=SELECT_VIEW_WIDTH
 SCORE_VIEW_HEIGHT=WINDOW_HEIGHT/2
@@ -338,6 +340,10 @@ class Item():
         self.point_center = pos+Vec2(self.width/2, self.height/2)
         self.hold_polygon = None
         self.available = False
+        self.hover = {}
+        self.hover_gap = 10
+        self.hover['name']=arcade.Text("hover", self.point_center.x , self.point_center.y, color=ITEM_HOVER_COLOR, font_size=ITEM_HOVER_FONT, bold=True)
+        self.hover['price']=arcade.Text("hover", self.point_center.x , self.point_center.y-self.hover_gap, color=ITEM_HOVER_COLOR, font_size=ITEM_HOVER_FONT, bold=True)
     def _draw_back_ground(self):
         if self.available:
             bg_color = ITEM_BG_COLOR_AVAILABLE
@@ -387,9 +393,11 @@ class Item():
         window.coin -= self.price
         if not self._is_drawing_circle():
             self._start_draw_circle()
-    def check_select(self, point):
+    def _mouse_is_in(self, point:Vec2):
+        return arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right)
+    def check_select(self, point:Vec2):
         global window
-        if not arcade.geometry.is_point_in_box(self.point_bottom_left, point, self.point_top_right):           
+        if not self._mouse_is_in(point):
             return
         if self.available:
             self.selected()
@@ -401,16 +409,32 @@ class Item():
         return
     def selected(self):
         pass
+    def _hover_price_text(self, key) -> str:
+        if key == 'name':
+            return self.name
+        if key == 'price':
+            return f"price: {self.price}"
     def _draw_item(self):
         rect = arcade.XYWH(self.point_center.x, self.point_center.y, self.width, self.height)
         arcade.draw_texture_rect(self.textture, rect)
-    def on_draw(self):
+    def _draw_hover(self, pos: Vec2):
+        gap = 0
+        for key, value in self.hover.items():
+            value.text = self._hover_price_text(key)
+            value.x = pos.x
+            value.y = pos.y + gap
+            value.draw()
+            gap -= self.hover_gap
+    def on_draw(self, vec_mouse:Vec2):
         self._draw_back_ground()
         self._draw_item()
+        if vec_mouse and self._mouse_is_in(vec_mouse):
+            self._draw_hover(vec_mouse)
 
 class ItemTower(Item):
     def __init__(self, pos:Vec2):
         super().__init__(pos)
+        self.name = "Gun Tower"
         self.hold_time = NEW_TOWER_INTERVAL
         self.textture = arcade.load_texture("image/cannon.png")
         self.available = True
@@ -421,6 +445,7 @@ class ItemTower(Item):
 class ItemMegaBomb(Item):
     def __init__(self, pos):
         super().__init__(pos)
+        self.name = "Mega Bomb"
         self.hold_time = NEW_BOMB_INTERVAL
         self.textture = arcade.load_texture("image/bomb.png")
         self.available = False
@@ -446,6 +471,7 @@ class SelectSection(arcade.Section):
         self.bottom_left = self.config['view']['bottom-left']
         self.view_width = self.config['view']['width']
         self.view_height = self.config['view']['height']
+        self.mouse_x, self.mouse_y = None,None
         super().__init__(left=self.bottom_left.x, bottom=self.bottom_left.y, width=self.view_width, height=self.view_height, name='select', accept_mouse_events=True, accept_keyboard_keys=False)
         item_pos = self.config['item']['start']
         item_delta = self.config['item']['delta']
@@ -468,6 +494,8 @@ class SelectSection(arcade.Section):
             global window
             window.selected_item = None
         return
+    def on_mouse_motion(self, x, y, dx, dy):
+        self.mouse_x, self.mouse_y = x,y
     def on_update(self, delta_time):
         for i in self.item:
             i.on_update(delta_time)
@@ -475,7 +503,10 @@ class SelectSection(arcade.Section):
     def on_draw(self):
         arcade.draw_lbwh_rectangle_filled(self.bottom_left.x, self.bottom_left.y, self.view_width, self.view_height, self.config['bg_color'])
         for i in self.item:
-            i.on_draw()
+            if self.mouse_x and self.mouse_y:
+                i.on_draw(Vec2(self.mouse_x, self.mouse_y))
+            else:
+                i.on_draw(None)
 
 class ScoreSection(arcade.Section):
     _config = {
