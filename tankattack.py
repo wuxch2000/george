@@ -16,18 +16,19 @@ range_list = arcade.SpriteList()
 NANO_SECOND = 1_000_000_000
 
 NEW_TANK_INTERVAL=5
-NEW_TOWER_INTERVAL=0.8
-NEW_BOMB_INTERVAL=1.5
+NEW_TOWER_INTERVAL=1.5
+NEW_BOMB_INTERVAL=2.5
 
 STARTING_COIN_VALUE = 500
 
 COIN_FOR_TANK = 80
-
 COIN_FOR_TOWER = 100
 COIN_FOR_BOMB = 200
 
 TOWER_SHOOT_INTERVAL=1
 TANK_SHOOT_INTERVAL=2
+
+TOWER_HEALTH = 6
 
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000
@@ -37,7 +38,7 @@ SELECT_VIEW_HEIGHT=WINDOW_HEIGHT/2
 SELECT_VIEW_X, SELECT_VIEW_Y=0, WINDOW_HEIGHT/2
 SELECT_BG_COLOR=arcade.color.BLUE_GRAY
 
-ITEM_GAP=8
+ITEM_GAP=10
 ITEM_WIDTH=SELECT_VIEW_WIDTH-2*ITEM_GAP
 ITEM_HEIGHT=ITEM_WIDTH
 ITEM_BG_COLOR=arcade.color.BRASS
@@ -153,7 +154,7 @@ class Tower(arcade.SpriteCircle):
         if health < len(Tower.health_color):
             return Tower.health_color[health]
         return arcade.color.GRAY
-    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=3, range=400):
+    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=400):
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval * NANO_SECOND
