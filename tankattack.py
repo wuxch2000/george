@@ -16,15 +16,18 @@ range_list = arcade.SpriteList()
 NANO_SECOND = 1_000_000_000
 
 NEW_TANK_INTERVAL=5
-NEW_TOWER_INTERVAL=3
-TANK_SHOOT_INTERVAL=2
+NEW_TOWER_INTERVAL=0.8
+NEW_BOMB_INTERVAL=1.5
 
 STARTING_COIN_VALUE = 500
-COIN_FOR_TANK = 100
+
+COIN_FOR_TANK = 80
+
 COIN_FOR_TOWER = 100
 COIN_FOR_BOMB = 200
-TOWER_SHOOT_INTERVAL=0.5
-NEW_BOMB_INTERVAL=10
+
+TOWER_SHOOT_INTERVAL=1
+TANK_SHOOT_INTERVAL=2
 
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000
@@ -153,7 +156,7 @@ class Tower(arcade.SpriteCircle):
     def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=3, range=400):
         self.health = health
         self.range = range
-        self.shoot_interval = shoot_interval *NANO_SECOND
+        self.shoot_interval = shoot_interval * NANO_SECOND
         super().__init__(self.base_radius, color=Tower._color_by_health(self.health), center_x=x, center_y=y)
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_YELLOW, center_x=x, center_y=y)
         self.cannon_width, self.cannon_height=self.base_radius*2,self.base_radius/2
@@ -181,10 +184,6 @@ class Tower(arcade.SpriteCircle):
         current_time = time.time_ns()
         if self.target:
             global window
-            if window.coin >= 100:
-                self.shoot_interval = 2* NANO_SECOND
-            else:
-                self.shoot_interval = 3600 * NANO_SECOND
             if self.shoot_time == 0 or current_time - self.shoot_time >= self.shoot_interval:
                 self.shoot_time = current_time
                 self.shoot()
