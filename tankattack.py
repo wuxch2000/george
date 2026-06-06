@@ -153,7 +153,7 @@ class Tower(arcade.SpriteCircle):
     def _color_by_health(health):
         if health < len(Tower.health_color):
             return Tower.health_color[health]
-        return arcade.color.GRAY
+        return arcade.color.VIOLET_BLUE
     def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=400):
         self.health = health
         self.range = range
@@ -660,22 +660,23 @@ class TankattackView(arcade.View):
         if self.new_tank_time == 0 or cur_time - self.new_tank_time >= new_tank_interval_ns:
             self.new_tank_time = cur_time
             self._new_tank()
-        if tank_list:
-            for tower in tower_list:
+        for tower in tower_list:
+            if tank_list:
                 closest_sprite, distance = arcade.get_closest_sprite(tower, tank_list)
                 if closest_sprite and distance <= tower.range:
                     tower.aim(closest_sprite)
                 else:
                     tower.target = None
-        if tower_list:
-            for tank in tank_list:
+            else:
+                tower.target = None
+        for tank in tank_list:
+            if tower_list:
                 closest_sprite, distance = arcade.get_closest_sprite(tank, tower_list)
                 if closest_sprite and distance <= tank.range:
                     tank.aim(closest_sprite)
                 else:
                     tank.reset_aim()
-        else:
-            for tank in tank_list:
+            else:
                 tank.reset_aim()
         for bullet in bullet_list:
             bullet.check_hit(tank_list)
@@ -685,7 +686,7 @@ class TankattackView(arcade.View):
     def on_draw(self):
         # bullet_list.draw_hit_boxes(arcade.color.RED)
         # tank_list.draw_hit_boxes(arcade.color.RED)
-        return
+        pass
 
 class TankattackWindow(arcade.Window):
     selected_item = None
@@ -699,15 +700,15 @@ class TankattackWindow(arcade.Window):
         return
     def on_key_press(self, key, modifiers):
         global show_range
-        if key == arcade.key.ESCAPE or key == arcade.key.Q:
-            print("Game Over")
-            self.close()
-        if key == arcade.key.R:
-            show_range = not show_range
-            print(f"show range:{show_range}")
-        return 
+        match key:
+            case arcade.key.ESCAPE | arcade.key.Q:
+                print("Game Over")
+                self.close()
+            case arcade.key.R:
+                show_range = not show_range
+                print(f"show range:{show_range}")
     def on_key_release(self, key, modifiers):
-        return
+        pass
 
 def main():
     print("Game Start")
