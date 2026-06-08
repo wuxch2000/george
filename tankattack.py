@@ -5,6 +5,7 @@ import time
 import random
 import arcade
 from pyglet.math import Vec2 as Vec2
+from pyglet.math import Vec3 as Vec3
 
 castle_list = arcade.SpriteList()
 tank_list = arcade.SpriteList()
@@ -140,28 +141,38 @@ class BulletFromTower(Bullet):
         super().__init__(x,y,target_x,target_y, speed, distance)
     def _can_be_hit(self, s:arcade.Sprite):
         return isinstance(s,Tank)
+
+def to_color(v: Vec3):
+    return (v.x, v.y, v.z, 255)
+
+class StepColor:
+    def __init__(self, start_color, end_color, max_step):
+        self.start_color = Vec3(start_color.r, start_color.g, start_color.b)
+        self.end_color = Vec3(end_color.r, end_color.g, end_color.b)
+        print(self.start_color, self.end_color)
+        self.max_step = max_step
+    def get_color(self, step) -> arcade.color:
+        if step > self.max_step:
+            step = self.max_step
+        if step < 0:
+            step = 0
+        return to_color(self.start_color.lerp(self.end_color, (self.max_step-step)/self.max_step))
+
 class Tower(arcade.SpriteCircle):
     target = None
     shoot_time = 0
     base_radius = 10
-    health_color = [
-        arcade.color.RED,
-        arcade.color.RED,
-        arcade.color.YELLOW,
-        arcade.color.VIOLET_BLUE,
-    ]
-    def _color_by_health(health):
-        if health < len(Tower.health_color):
-            return Tower.health_color[health]
-        return arcade.color.VIOLET_BLUE
     def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=400):
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval * NANO_SECOND
-        super().__init__(self.base_radius, color=Tower._color_by_health(self.health), center_x=x, center_y=y)
+        start_color = arcade.color.VIOLET_BLUE
+        end_color = arcade.color.RED
+        self.step_color = StepColor(start_color, end_color, max_step=health)
+        super().__init__(self.base_radius, color=start_color, center_x=x, center_y=y)
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_YELLOW, center_x=x, center_y=y)
         self.cannon_width, self.cannon_height=self.base_radius*2,self.base_radius/2
-        self.cannon = arcade.SpriteSolidColor(color=Tower._color_by_health(self.health), center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
+        self.cannon = arcade.SpriteSolidColor(color=start_color, center_x=x+self.cannon_width/2, center_y=y, width=self.cannon_width, height=self.cannon_height)
         self.shoot_sound = arcade.sound.load_sound(":resources:/sounds/hurt2.wav")
         self.explsion_sound = arcade.sound.load_sound(":resources:/sounds/explosion1.wav")
         global window
@@ -191,7 +202,7 @@ class Tower(arcade.SpriteCircle):
         return
     def hit(self):
         self.health-=1
-        color = Tower._color_by_health(self.health)
+        color = self.step_color.get_color(self.health)
         self.color, self.cannon.color = color,color
         if self.health == 0:
             arcade.play_sound(self.explsion_sound)
