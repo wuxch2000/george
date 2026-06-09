@@ -203,7 +203,7 @@ class Tower(arcade.SpriteCircle):
     def hit(self):
         self.health-=1
         color = self.step_color.get_color(self.health)
-        self.color, self.cannon.color = color,color
+        self.color = self.cannon.color = color
         if self.health == 0:
             arcade.play_sound(self.explsion_sound)
             self.kill()
