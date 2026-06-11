@@ -198,23 +198,12 @@ class StepColor:
 class Tower(arcade.SpriteCircle):
     target = None
     shoot_time = 0
-<<<<<<< HEAD
-    base_radius = 10
-    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=400):
-=======
-    base_radius = TOWER_RADIUS
-    health_color = [
-        arcade.color.RED,
-        arcade.color.RED,
-        arcade.color.YELLOW,
-        arcade.color.VIOLET_BLUE,
-    ]
     def _color_by_health(health):
         if health < len(Tower.health_color):
             return Tower.health_color[health]
         return arcade.color.GRAY
     def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=TOWER_RANGE):
->>>>>>> jessica-1
+        self.base_radius = TOWER_RADIUS
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval * NANO_SECOND
