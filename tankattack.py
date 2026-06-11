@@ -14,10 +14,13 @@ bullet_list = arcade.SpriteList()
 tower_list = arcade.SpriteList()
 tower_part_list = arcade.SpriteList()
 range_list = arcade.SpriteList()
+show_range=False
+game_over=False
 
 NANO_SECOND = 1_000_000_000
 
-INIT_SCRIPT="""This is the script
+INIT_SCRIPT="""
+    This is the script
 this is the second line
 this is the third line
 """
@@ -123,8 +126,6 @@ def set_data_by_character(character):
     elif character == "zoe":
         config.NEW_TANK_INTERVAL= 0.9
 
-show_range=False
-game_over=False
 
 class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
