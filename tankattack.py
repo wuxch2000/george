@@ -795,7 +795,7 @@ class TankattackWindow(arcade.Window):
 
 def main():
     print("Game Start")
-    global window
+    global window, init_view, view
     window = TankattackWindow()
     init_view =InitView()
     init_view.setup()
@@ -805,6 +805,8 @@ def main():
     arcade.run()
     return
 
-
 if __name__ == "__main__":
     main()
+
+# save changes: git commit -a -m "message"
+# discard changes: git checkout -- .
