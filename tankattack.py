@@ -810,3 +810,5 @@ if __name__ == "__main__":
 
 # save changes: git commit -a -m "message"
 # discard changes: git checkout -- .
+# push changes: git push
+# get  changes: git pull
