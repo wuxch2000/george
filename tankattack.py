@@ -260,8 +260,8 @@ class Tower(arcade.SpriteCircle):
         window.tower_number -= 1
         return
 class MegaTower(Tower):
-    def __init__(self, x, y, shoot_interval=MEGA_TOWER_SHOOT_INTERVAL, health=MEGA_TOWER_HEALTH, range=TOWER_RANGE, start_color=arcade.color.BLUE, end_color=arcade.color.RED):
-        super().__init__(x,y, shoot_interval, health,range) 
+    def __init__(self, x, y, shoot_interval=MEGA_TOWER_SHOOT_INTERVAL, health=MEGA_TOWER_HEALTH, range=TOWER_RANGE, start_color=arcade.color.BLUE_GREEN, end_color=arcade.color.RED):
+        super().__init__(x,y, shoot_interval, health,range, start_color, end_color) 
 
 class Tank(arcade.Sprite):
     final_target_sprite=None
@@ -509,7 +509,7 @@ class ItemMegaTower(Item):
         self.available = True
         self.price = COIN_FOR_MEGA_TOWER
     def selected(self):
-        print("select tower")
+        print("select mega tower")
 
 class ItemMegaBomb(Item):
     def __init__(self, pos):
@@ -645,7 +645,7 @@ class TankattackSection(arcade.Section):
                     tower_part_list.append(tower.cannon)
                     range_list.append(tower.range_spirte)
                 elif isinstance(window.selected_item, ItemMegaTower):
-                    tower = Tower(x,y)
+                    tower = MegaTower(x,y)
                     tower_list.append(tower)
                     tower_part_list.append(tower.cannon)
                     range_list.append(tower.range_spirte)
