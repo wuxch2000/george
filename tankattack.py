@@ -764,6 +764,13 @@ class TankattackView(arcade.View):
         # tank_list.draw_hit_boxes(arcade.color.RED)
         pass
 
+class InitView(arcade.View):
+    def __init__(self):
+        super().__init__()
+        self.background_color = arcade.color.DARK_GRAY
+    def setup(self):
+        pass
+
 class TankattackWindow(arcade.Window):
     selected_item = None
     tank_number, tank_total = 0, 0
@@ -790,9 +797,11 @@ def main():
     print("Game Start")
     global window
     window = TankattackWindow()
+    init_view =InitView()
+    init_view.setup()
     view = TankattackView()
     view.setup()
-    window.show_view(view)
+    window.show_view(init_view)
     arcade.run()
     return
 
