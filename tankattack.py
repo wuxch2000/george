@@ -20,6 +20,7 @@ CHARACTER_SELECT = None
 
 NEW_TANK_INTERVAL= 1
 NEW_TOWER_INTERVAL=1.5
+NEW_MEGA_TOWER_INTERVAL=3
 NEW_BOMB_INTERVAL=2.5
 
 TANK_SPEED = 1
@@ -35,12 +36,16 @@ STARTING_COIN_VALUE = 1001
 
 COIN_FOR_TANK = 80
 COIN_FOR_TOWER = 400
+COIN_FOR_MEGA_TOWER = 400*2
 COIN_FOR_BOMB = 200
 
 TOWER_SHOOT_INTERVAL=0.5
+MEGA_TOWER_SHOOT_INTERVAL=0.5
 TANK_SHOOT_INTERVAL=1
 
+
 TOWER_HEALTH = 6
+MEGA_TOWER_HEALTH = 12
 TANK_HEALTH = 3
 
 WINDOW_WIDTH =1600 
@@ -202,13 +207,11 @@ class Tower(arcade.SpriteCircle):
         if health < len(Tower.health_color):
             return Tower.health_color[health]
         return arcade.color.GRAY
-    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=TOWER_RANGE):
+    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=TOWER_RANGE, start_color=arcade.color.VIOLET_BLUE, end_color=arcade.color.RED):
         self.base_radius = TOWER_RADIUS
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval * NANO_SECOND
-        start_color = arcade.color.VIOLET_BLUE
-        end_color = arcade.color.RED
         self.step_color = StepColor(start_color, end_color, max_step=health)
         super().__init__(self.base_radius, color=start_color, center_x=x, center_y=y)
         self.range_spirte = arcade.SpriteCircle(range, color=arcade.color.DARK_YELLOW, center_x=x, center_y=y)
@@ -256,6 +259,9 @@ class Tower(arcade.SpriteCircle):
         super().kill()
         window.tower_number -= 1
         return
+class MegaTower(Tower):
+    def __init__(self, x, y, shoot_interval=MEGA_TOWER_SHOOT_INTERVAL, health=MEGA_TOWER_HEALTH, range=TOWER_RANGE, start_color=arcade.color.BLUE, end_color=arcade.color.RED):
+        super().__init__(x,y, shoot_interval, health,range) 
 
 class Tank(arcade.Sprite):
     final_target_sprite=None
@@ -494,6 +500,17 @@ class ItemTower(Item):
     def selected(self):
         print("select tower")
 
+class ItemMegaTower(Item):
+    def __init__(self, pos:Vec2):
+        super().__init__(pos)
+        self.name = "Mega Tower"
+        self.hold_time = NEW_MEGA_TOWER_INTERVAL
+        self.textture = arcade.load_texture("image/cannon.png")
+        self.available = True
+        self.price = COIN_FOR_MEGA_TOWER
+    def selected(self):
+        print("select tower")
+
 class ItemMegaBomb(Item):
     def __init__(self, pos):
         super().__init__(pos)
@@ -528,6 +545,8 @@ class SelectSection(arcade.Section):
         item_pos = self.config['item']['start']
         item_delta = self.config['item']['delta']
         self.item.append(ItemTower(item_pos))
+        item_pos += item_delta
+        self.item.append(ItemMegaTower(item_pos))
         item_pos += item_delta
         self.item.append(ItemMegaBomb(item_pos))
     def on_mouse_enter(self, x: float, y: float):
@@ -621,6 +640,11 @@ class TankattackSection(arcade.Section):
         if button == arcade.MOUSE_BUTTON_LEFT:
             if window.selected_item:
                 if isinstance(window.selected_item, ItemTower):
+                    tower = Tower(x,y)
+                    tower_list.append(tower)
+                    tower_part_list.append(tower.cannon)
+                    range_list.append(tower.range_spirte)
+                elif isinstance(window.selected_item, ItemMegaTower):
                     tower = Tower(x,y)
                     tower_list.append(tower)
                     tower_part_list.append(tower.cannon)
