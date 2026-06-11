@@ -15,21 +15,33 @@ tower_part_list = arcade.SpriteList()
 range_list = arcade.SpriteList()
 
 NANO_SECOND = 1_000_000_000
+#CHARACTER_SELECT = "jessica"
+CHARACTER_SELECT = None
 
-NEW_TANK_INTERVAL=5
+NEW_TANK_INTERVAL= 1
 NEW_TOWER_INTERVAL=1.5
 NEW_BOMB_INTERVAL=2.5
 
-STARTING_COIN_VALUE = 500
+TANK_SPEED = 1
+
+BULLET_FROM_TANK_SPEED = 5
+BULLET_FROM_TOWER_SPEED = 5
+
+
+CASTLE_RADIUS = 100
+TOWER_RADIUS = 35
+
+STARTING_COIN_VALUE = 1001
 
 COIN_FOR_TANK = 80
-COIN_FOR_TOWER = 100
+COIN_FOR_TOWER = 400
 COIN_FOR_BOMB = 200
 
-TOWER_SHOOT_INTERVAL=1
-TANK_SHOOT_INTERVAL=2
+TOWER_SHOOT_INTERVAL=0.5
+TANK_SHOOT_INTERVAL=1
 
 TOWER_HEALTH = 6
+TANK_HEALTH = 3
 
 WINDOW_WIDTH =1600 
 WINDOW_HEIGHT=1000
@@ -65,16 +77,41 @@ ATTACK_X, ATTACK_Y=SELECT_VIEW_WIDTH, 0
 
 CASTLE_HEALTH = 20
 
+TOWER_RANGE = 400
+TANK_RANGE = 300
+
+if CHARACTER_SELECT == "jessica":
+    NEW_TANK_INTERVAL= 0.7
+    NEW_TOWER_INTERVAL=1
+    NEW_BOMB_INTERVAL=2.3
+    TANK_SPEED = 1
+    BULLET_FROM_TANK_SPEED = 6
+    BULLET_FROM_TOWER_SPEED = 10
+    CASTLE_RADIUS = 100
+    TOWER_RADIUS = 30
+
+    STARTING_COIN_VALUE = 600
+
+    COIN_FOR_TANK = 80
+    COIN_FOR_TOWER = 400
+    COIN_FOR_BOMB = 200
+
+    TOWER_SHOOT_INTERVAL=0.5
+    TANK_SHOOT_INTERVAL=1
+
+    TOWER_HEALTH = 5
+    TANK_HEALTH = 3
+
 show_range=False
 game_over=False
- 
+
 class Brick(arcade.SpriteSolidColor):
     def __init__(self, x, y, width, heigh, angle=0):
         super().__init__(center_x=x, center_y=y, width=width, height=heigh, angle=angle, color=arcade.color.ROSE_EBONY)
         return
 
 class Castle(arcade.Sprite):
-    castle_radius = 100
+    castle_radius = CASTLE_RADIUS 
     castle_color = arcade.color.DARK_BLUE
     def __init__(self):
         global window
@@ -132,12 +169,12 @@ class Bullet(arcade.Sprite):
             break
         return
 class BulletFromTank(Bullet):
-    def __init__(self, x, y, target_x, target_y, speed = 5, distance=0):
+    def __init__(self, x, y, target_x, target_y, speed = BULLET_FROM_TANK_SPEED, distance=0):
         super().__init__(x,y,target_x,target_y, speed, distance)
     def _can_be_hit(self, s:arcade.Sprite):
         return not isinstance(s, Tank)
 class BulletFromTower(Bullet):
-    def __init__(self, x, y, target_x, target_y, speed = 5, distance=0):
+    def __init__(self, x, y, target_x, target_y, speed = BULLET_FROM_TOWER_SPEED, distance=0):
         super().__init__(x,y,target_x,target_y, speed, distance)
     def _can_be_hit(self, s:arcade.Sprite):
         return isinstance(s,Tank)
@@ -161,8 +198,23 @@ class StepColor:
 class Tower(arcade.SpriteCircle):
     target = None
     shoot_time = 0
+<<<<<<< HEAD
     base_radius = 10
     def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=400):
+=======
+    base_radius = TOWER_RADIUS
+    health_color = [
+        arcade.color.RED,
+        arcade.color.RED,
+        arcade.color.YELLOW,
+        arcade.color.VIOLET_BLUE,
+    ]
+    def _color_by_health(health):
+        if health < len(Tower.health_color):
+            return Tower.health_color[health]
+        return arcade.color.GRAY
+    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=TOWER_RANGE):
+>>>>>>> jessica-1
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval * NANO_SECOND
@@ -219,7 +271,7 @@ class Tower(arcade.SpriteCircle):
 class Tank(arcade.Sprite):
     final_target_sprite=None
     target_sprite = None
-    def __init__(self, x, y, speed = 1, health = 3, range=600, shoot_interval=TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
+    def __init__(self, x, y, speed = TANK_SPEED, health = TANK_HEALTH, range=TANK_RANGE, shoot_interval=TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
         super().__init__()
         super().append_texture(arcade.load_texture("image/tank.blue.png"))
         super().append_texture(arcade.load_texture("image/tank.yellow.png"))
@@ -730,6 +782,7 @@ def main():
     window.show_view(view)
     arcade.run()
     return
+
 
 if __name__ == "__main__":
     main()
