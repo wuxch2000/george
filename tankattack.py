@@ -4,6 +4,7 @@ import math
 import time
 import random
 import arcade
+import arcade.gui
 from pyglet.math import Vec2 as Vec2
 from pyglet.math import Vec3 as Vec3
 
@@ -15,97 +16,112 @@ tower_part_list = arcade.SpriteList()
 range_list = arcade.SpriteList()
 
 NANO_SECOND = 1_000_000_000
-#CHARACTER_SELECT = "jessica"
-CHARACTER_SELECT = None
 
-NEW_TANK_INTERVAL= 1
-NEW_TOWER_INTERVAL=1.5
-NEW_MEGA_TOWER_INTERVAL=3
-NEW_BOMB_INTERVAL=2.5
+INIT_SCRIPT="""This is the script
+this is the second line
+this is the third line
+"""
 
-TANK_SPEED = 1
+class Config:
+    NEW_TANK_INTERVAL= 3
+    NEW_TOWER_INTERVAL=1.5
+    NEW_MEGA_TOWER_INTERVAL=3
+    NEW_BOMB_INTERVAL=2.5
 
-BULLET_FROM_TANK_SPEED = 5
-BULLET_FROM_TOWER_SPEED = 5
-
-
-CASTLE_RADIUS = 100
-TOWER_RADIUS = 35
-
-STARTING_COIN_VALUE = 1001
-
-COIN_FOR_TANK = 80
-COIN_FOR_TOWER = 400
-COIN_FOR_MEGA_TOWER = 400*2
-COIN_FOR_BOMB = 200
-
-TOWER_SHOOT_INTERVAL=0.6
-MEGA_TOWER_SHOOT_INTERVAL=0.3
-TANK_SHOOT_INTERVAL=1
-
-
-TOWER_HEALTH = 6
-MEGA_TOWER_HEALTH = 17
-TANK_HEALTH = 3
-
-WINDOW_WIDTH =1600 
-WINDOW_HEIGHT=1000
-
-SELECT_VIEW_WIDTH=100
-SELECT_VIEW_HEIGHT=WINDOW_HEIGHT/2
-SELECT_VIEW_X, SELECT_VIEW_Y=0, WINDOW_HEIGHT/2
-SELECT_BG_COLOR=arcade.color.BLUE_GRAY
-
-ITEM_GAP=10
-ITEM_WIDTH=SELECT_VIEW_WIDTH-2*ITEM_GAP
-ITEM_HEIGHT=ITEM_WIDTH
-ITEM_BG_COLOR=arcade.color.BRASS
-ITEM_BG_COLOR_AVAILABLE=arcade.color.CELADON_GREEN
-ITEM_HOLD_BG_COLOR=arcade.color.GRAY
-ITEM_HOVER_COLOR=arcade.color.WHITE_SMOKE
-ITEM_HOVER_FONT=10
-
-SCORE_VIEW_WIDTH=SELECT_VIEW_WIDTH
-SCORE_VIEW_HEIGHT=WINDOW_HEIGHT/2
-SCORE_VIEW_X, SCORE_VIEW_Y = 0, 0
-SCORE_BG_COLOR=arcade.color.BLEU_DE_FRANCE
-
-SCORE_TEXT_X_GAP=8
-SCORE_TEXT_Y_GAP=30
-SCORE_TEXT_COLOR=arcade.color.YELLOW
-SCORE_TEXT_SIZE=12
-
-ATTACK_VIEW_WIDTH=WINDOW_WIDTH-SELECT_VIEW_WIDTH
-ATTACK_VIEW_HEIGHT=WINDOW_HEIGHT
-ATTACK_BG_COLOR=arcade.color.DARK_GRAY
-ATTACK_X, ATTACK_Y=SELECT_VIEW_WIDTH, 0
-
-CASTLE_HEALTH = 20
-
-TOWER_RANGE = 400
-TANK_RANGE = 300
-
-if CHARACTER_SELECT == "jessica":
-    NEW_TANK_INTERVAL= 0.7
-    NEW_TOWER_INTERVAL=1
-    NEW_BOMB_INTERVAL=2.3
     TANK_SPEED = 1
-    BULLET_FROM_TANK_SPEED = 6
-    BULLET_FROM_TOWER_SPEED = 10
-    CASTLE_RADIUS = 100
-    TOWER_RADIUS = 30
 
-    STARTING_COIN_VALUE = 600
+    BULLET_FROM_TANK_SPEED = 5
+    BULLET_FROM_TOWER_SPEED = 5
+
+    CASTLE_RADIUS = 100
+    TOWER_RADIUS = 35
+    META_TOWER_RADIUS = TOWER_RADIUS*1.2
+
+    STARTING_COIN_VALUE = 1001
 
     COIN_FOR_TANK = 80
     COIN_FOR_TOWER = 400
+    COIN_FOR_MEGA_TOWER = 400*2
     COIN_FOR_BOMB = 200
 
-    TOWER_SHOOT_INTERVAL=0.5
+    TOWER_SHOOT_INTERVAL=0.6
+    MEGA_TOWER_SHOOT_INTERVAL=0.3
     TANK_SHOOT_INTERVAL=1
 
-    TOWER_HEALTH = 5
+    TOWER_HEALTH = 6
+    MEGA_TOWER_HEALTH = 17
     TANK_HEALTH = 3
+
+    WINDOW_WIDTH =1600 
+    WINDOW_HEIGHT=1000
+
+    SELECT_VIEW_WIDTH=100
+    SELECT_VIEW_HEIGHT=WINDOW_HEIGHT/2
+    SELECT_VIEW_X, SELECT_VIEW_Y=0, WINDOW_HEIGHT/2
+    SELECT_BG_COLOR=arcade.color.BLUE_GRAY
+
+    ITEM_GAP=10
+    ITEM_WIDTH=SELECT_VIEW_WIDTH-2*ITEM_GAP
+    ITEM_HEIGHT=ITEM_WIDTH
+    ITEM_BG_COLOR=arcade.color.BRASS
+    ITEM_BG_COLOR_AVAILABLE=arcade.color.CELADON_GREEN
+    ITEM_HOLD_BG_COLOR=arcade.color.GRAY
+    ITEM_HOVER_COLOR=arcade.color.WHITE_SMOKE
+    ITEM_HOVER_FONT=10
+
+    SCORE_VIEW_WIDTH=SELECT_VIEW_WIDTH
+    SCORE_VIEW_HEIGHT=WINDOW_HEIGHT/2
+    SCORE_VIEW_X, SCORE_VIEW_Y = 0, 0
+    SCORE_BG_COLOR=arcade.color.BLEU_DE_FRANCE
+
+    SCORE_TEXT_X_GAP=8
+    SCORE_TEXT_Y_GAP=30
+    SCORE_TEXT_COLOR=arcade.color.YELLOW
+    SCORE_TEXT_SIZE=12
+
+    ATTACK_VIEW_WIDTH=WINDOW_WIDTH-SELECT_VIEW_WIDTH
+    ATTACK_VIEW_HEIGHT=WINDOW_HEIGHT
+    ATTACK_BG_COLOR=arcade.color.DARK_GRAY
+    ATTACK_X, ATTACK_Y=SELECT_VIEW_WIDTH, 0
+
+    CASTLE_HEALTH = 20
+
+    TOWER_RANGE = 400
+    TANK_RANGE = 300
+    def __init__(self):
+        pass
+
+config = Config()
+
+def set_data_by_character(character):
+    print(f"set data by {character}")
+    global config
+    if character == "jessica":
+        config.NEW_TANK_INTERVAL= 0.7
+        config.NEW_TOWER_INTERVAL=1
+        config.NEW_BOMB_INTERVAL=2.3
+        config.TANK_SPEED = 1
+        config.BULLET_FROM_TANK_SPEED = 6
+        config.BULLET_FROM_TOWER_SPEED = 10
+        config.CASTLE_RADIUS = 100
+        config.TOWER_RADIUS = 30
+        config.META_TOWER_RADIUS = config.TOWER_RADIUS*1.2
+
+        config.STARTING_COIN_VALUE = 600
+
+        config.COIN_FOR_TANK = 80
+        config.COIN_FOR_TOWER = 400
+        config.COIN_FOR_BOMB = 200
+
+        config.TOWER_SHOOT_INTERVAL=0.5
+        config.TANK_SHOOT_INTERVAL=1
+
+        config.TOWER_HEALTH = 5
+        config.TANK_HEALTH = 3
+    elif character == "brandon":
+        config.NEW_TANK_INTERVAL= 2
+    elif character == "zoe":
+        config.NEW_TANK_INTERVAL= 0.9
 
 show_range=False
 game_over=False
@@ -116,14 +132,14 @@ class Brick(arcade.SpriteSolidColor):
         return
 
 class Castle(arcade.Sprite):
-    castle_radius = CASTLE_RADIUS 
+    castle_radius = config.CASTLE_RADIUS 
     castle_color = arcade.color.DARK_BLUE
     def __init__(self):
         global window
         super().__init__()
         self._new_radius()
-        self.center_x=WINDOW_WIDTH/2
-        self.center_y=WINDOW_HEIGHT/2
+        self.center_x=config.WINDOW_WIDTH/2
+        self.center_y=config.WINDOW_HEIGHT/2
         self.delta_radius = int(self.castle_radius/window.castle_health)
         self.hit_sound = arcade.sound.load_sound(":resources:/sounds/hurt5.wav")
         return
@@ -156,7 +172,7 @@ class Bullet(arcade.Sprite):
         self.center_x += self.change_x
         self.center_y += self.change_y
     def out_of_view(self):
-        if self.top >= WINDOW_HEIGHT or self.bottom <= 0 or self.left <=0 or self.right >= WINDOW_WIDTH:
+        if self.top >= config.WINDOW_HEIGHT or self.bottom <= 0 or self.left <=0 or self.right >= config.WINDOW_WIDTH:
             return True
         return False
     def check_hit(self, sl:arcade.SpriteList):
@@ -174,12 +190,12 @@ class Bullet(arcade.Sprite):
             break
         return
 class BulletFromTank(Bullet):
-    def __init__(self, x, y, target_x, target_y, speed = BULLET_FROM_TANK_SPEED, distance=0):
+    def __init__(self, x, y, target_x, target_y, speed = config.BULLET_FROM_TANK_SPEED, distance=0):
         super().__init__(x,y,target_x,target_y, speed, distance)
     def _can_be_hit(self, s:arcade.Sprite):
         return not isinstance(s, Tank)
 class BulletFromTower(Bullet):
-    def __init__(self, x, y, target_x, target_y, speed = BULLET_FROM_TOWER_SPEED, distance=0):
+    def __init__(self, x, y, target_x, target_y, speed = config.BULLET_FROM_TOWER_SPEED, distance=0):
         super().__init__(x,y,target_x,target_y, speed, distance)
     def _can_be_hit(self, s:arcade.Sprite):
         return isinstance(s,Tank)
@@ -207,8 +223,8 @@ class Tower(arcade.SpriteCircle):
         if health < len(Tower.health_color):
             return Tower.health_color[health]
         return arcade.color.GRAY
-    def __init__(self, x, y, shoot_interval=TOWER_SHOOT_INTERVAL, health=TOWER_HEALTH, range=TOWER_RANGE, start_color=arcade.color.VIOLET_BLUE, end_color=arcade.color.RED):
-        self.base_radius = TOWER_RADIUS
+    def __init__(self, x, y, radius=config.TOWER_RADIUS, shoot_interval=config.TOWER_SHOOT_INTERVAL, health=config.TOWER_HEALTH, range=config.TOWER_RANGE, start_color=arcade.color.VIOLET_BLUE, end_color=arcade.color.RED):
+        self.base_radius = radius
         self.health = health
         self.range = range
         self.shoot_interval = shoot_interval * NANO_SECOND
@@ -260,13 +276,13 @@ class Tower(arcade.SpriteCircle):
         window.tower_number -= 1
         return
 class MegaTower(Tower):
-    def __init__(self, x, y, shoot_interval=MEGA_TOWER_SHOOT_INTERVAL, health=MEGA_TOWER_HEALTH, range=TOWER_RANGE, start_color=arcade.color.BLUE_GREEN, end_color=arcade.color.RED):
-        super().__init__(x,y, shoot_interval, health,range, start_color, end_color) 
+    def __init__(self, x, y, radius=config.META_TOWER_RADIUS, shoot_interval=config.MEGA_TOWER_SHOOT_INTERVAL, health=config.MEGA_TOWER_HEALTH, range=config.TOWER_RANGE, start_color=arcade.color.BLUE_GREEN, end_color=arcade.color.RED):
+        super().__init__(x,y, radius, shoot_interval, health,range, start_color, end_color) 
 
 class Tank(arcade.Sprite):
     final_target_sprite=None
     target_sprite = None
-    def __init__(self, x, y, speed = TANK_SPEED, health = TANK_HEALTH, range=TANK_RANGE, shoot_interval=TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
+    def __init__(self, x, y, speed = config.TANK_SPEED, health = config.TANK_HEALTH, range=config.TANK_RANGE, shoot_interval=config.TANK_SHOOT_INTERVAL, target_sprite:arcade.Sprite=None):
         super().__init__()
         super().append_texture(arcade.load_texture("image/tank.blue.png"))
         super().append_texture(arcade.load_texture("image/tank.yellow.png"))
@@ -344,7 +360,7 @@ class Tank(arcade.Sprite):
         self.range_spirte.kill()
         super().kill()
         window.tank_number -= 1
-        window.coin += COIN_FOR_TANK
+        window.coin += config.COIN_FOR_TANK
 
 class HoldPath():
     def __init__(self, speed, path:list):
@@ -387,8 +403,8 @@ class Item():
     hold_time = 0
     hold_path = None
     def __init__(self, pos:Vec2):
-        self.width = ITEM_WIDTH
-        self.height = ITEM_HEIGHT
+        self.width = config.ITEM_WIDTH
+        self.height = config.ITEM_HEIGHT
         self.point_bottom_left = pos
         self.point_top_right = pos+Vec2(self.width, self.height)
         self.point_bottom_right=pos+Vec2(self.width, 0)
@@ -400,16 +416,16 @@ class Item():
         self.available = False
         self.hover = {}
         self.hover_gap = 10
-        self.hover['name']=arcade.Text("hover", self.point_center.x , self.point_center.y, color=ITEM_HOVER_COLOR, font_size=ITEM_HOVER_FONT, bold=True)
-        self.hover['price']=arcade.Text("hover", self.point_center.x , self.point_center.y-self.hover_gap, color=ITEM_HOVER_COLOR, font_size=ITEM_HOVER_FONT, bold=True)
+        self.hover['name']=arcade.Text("hover", self.point_center.x , self.point_center.y, color=config.ITEM_HOVER_COLOR, font_size=config.ITEM_HOVER_FONT, bold=True)
+        self.hover['price']=arcade.Text("hover", self.point_center.x , self.point_center.y-self.hover_gap, color=config.ITEM_HOVER_COLOR, font_size=config.ITEM_HOVER_FONT, bold=True)
     def _draw_back_ground(self):
         if self.available:
-            bg_color = ITEM_BG_COLOR_AVAILABLE
+            bg_color = config.ITEM_BG_COLOR_AVAILABLE
         else:
-            bg_color = ITEM_BG_COLOR
+            bg_color = config.ITEM_BG_COLOR
         arcade.draw_lbwh_rectangle_filled(self.point_bottom_left.x, self.point_bottom_left.y, self.width, self.height, bg_color)
         if self.hold_polygon:
-            arcade.draw_polygon_filled(self.hold_polygon, ITEM_HOLD_BG_COLOR)
+            arcade.draw_polygon_filled(self.hold_polygon, config.ITEM_HOLD_BG_COLOR)
     def _start_draw_circle(self):
         if self.hold_path:
             print('holding is running')
@@ -493,10 +509,10 @@ class ItemTower(Item):
     def __init__(self, pos:Vec2):
         super().__init__(pos)
         self.name = "Gun Tower"
-        self.hold_time = NEW_TOWER_INTERVAL
+        self.hold_time = config.NEW_TOWER_INTERVAL
         self.textture = arcade.load_texture("image/cannon.png")
         self.available = True
-        self.price = COIN_FOR_TOWER
+        self.price = config.COIN_FOR_TOWER
     def selected(self):
         print("select tower")
 
@@ -504,10 +520,10 @@ class ItemMegaTower(Item):
     def __init__(self, pos:Vec2):
         super().__init__(pos)
         self.name = "Mega Tower"
-        self.hold_time = NEW_MEGA_TOWER_INTERVAL
-        self.textture = arcade.load_texture("image/cannon.png")
+        self.hold_time = config.NEW_MEGA_TOWER_INTERVAL
+        self.textture = arcade.load_texture("image/mega-cannon.png")
         self.available = True
-        self.price = COIN_FOR_MEGA_TOWER
+        self.price = config.COIN_FOR_MEGA_TOWER
     def selected(self):
         print("select mega tower")
 
@@ -515,10 +531,10 @@ class ItemMegaBomb(Item):
     def __init__(self, pos):
         super().__init__(pos)
         self.name = "Mega Bomb"
-        self.hold_time = NEW_BOMB_INTERVAL
+        self.hold_time = config.NEW_BOMB_INTERVAL
         self.textture = arcade.load_texture("image/bomb.png")
         self.available = False
-        self.price = COIN_FOR_BOMB
+        self.price = config.COIN_FOR_BOMB
     def selected(self):
         print("select bomb")
 
@@ -526,12 +542,12 @@ class SelectSection(arcade.Section):
     item = []
     _config = {
         'top-left' : {
-            'view': {'bottom-left': Vec2(SELECT_VIEW_X, SELECT_VIEW_Y), 
-                     'width':SELECT_VIEW_WIDTH,
-                     'height': SELECT_VIEW_HEIGHT},
-            'item': {'start': Vec2(SELECT_VIEW_X+ITEM_GAP, WINDOW_HEIGHT-(ITEM_HEIGHT+ITEM_GAP)), 
-                     'delta': Vec2(0, -(ITEM_GAP+ITEM_HEIGHT))},
-            'bg_color': SELECT_BG_COLOR,
+            'view': {'bottom-left': Vec2(config.SELECT_VIEW_X, config.SELECT_VIEW_Y), 
+                     'width':config.SELECT_VIEW_WIDTH,
+                     'height': config.SELECT_VIEW_HEIGHT},
+            'item': {'start': Vec2(config.SELECT_VIEW_X+config.ITEM_GAP, config.WINDOW_HEIGHT-(config.ITEM_HEIGHT+config.ITEM_GAP)), 
+                     'delta': Vec2(0, -(config.ITEM_GAP+config.ITEM_HEIGHT))},
+            'bg_color': config.SELECT_BG_COLOR,
         },
     }
     def __init__(self, position='top-left'):
@@ -582,16 +598,16 @@ class SelectSection(arcade.Section):
 class ScoreSection(arcade.Section):
     _config = {
         'bottom-left' : {
-            'view': {'bottom-left': Vec2(SCORE_VIEW_X, SCORE_VIEW_Y), 
-                     'width':SCORE_VIEW_WIDTH,
-                     'height': SCORE_VIEW_HEIGHT},
-            'text': {'start': Vec2(SCORE_VIEW_X+SCORE_TEXT_X_GAP, SCORE_VIEW_HEIGHT-SCORE_TEXT_Y_GAP),
-                     'delta': Vec2(0, -(SCORE_TEXT_Y_GAP)),
-                     'font-size':SCORE_TEXT_SIZE,
-                     'color':SCORE_TEXT_COLOR,
+            'view': {'bottom-left': Vec2(config.SCORE_VIEW_X, config.SCORE_VIEW_Y), 
+                     'width':config.SCORE_VIEW_WIDTH,
+                     'height': config.SCORE_VIEW_HEIGHT},
+            'text': {'start': Vec2(config.SCORE_VIEW_X+config.SCORE_TEXT_X_GAP, config.SCORE_VIEW_HEIGHT-config.SCORE_TEXT_Y_GAP),
+                     'delta': Vec2(0, -(config.SCORE_TEXT_Y_GAP)),
+                     'font-size':config.SCORE_TEXT_SIZE,
+                     'color':config.SCORE_TEXT_COLOR,
                      'bold': True,
                      },
-            'bg_color': SCORE_BG_COLOR,
+            'bg_color': config.SCORE_BG_COLOR,
         },
     }
     def _append_text(list, key, str, pos, text_config):
@@ -631,7 +647,7 @@ class ScoreSection(arcade.Section):
 
 class TankattackSection(arcade.Section):
     def __init__(self):
-        super().__init__(left=ATTACK_X, bottom=ATTACK_Y, width=ATTACK_VIEW_WIDTH, height=ATTACK_VIEW_HEIGHT, name="attack", accept_mouse_events=True, accept_keyboard_keys=False)
+        super().__init__(left=config.ATTACK_X, bottom=config.ATTACK_Y, width=config.ATTACK_VIEW_WIDTH, height=config.ATTACK_VIEW_HEIGHT, name="attack", accept_mouse_events=True, accept_keyboard_keys=False)
         self.bomb_sound = arcade.sound.load_sound(":resources:/sounds/upgrade4.wav")
         self.mouse_x, self.mouse_y = None, None
         return
@@ -675,7 +691,7 @@ class TankattackSection(arcade.Section):
     def on_mouse_motion(self, x, y, dx, dy):
         self.mouse_x, self.mouse_y = x,y
     def on_draw(self):
-        arcade.draw_lbwh_rectangle_filled(ATTACK_X, ATTACK_Y, self.width, self.height, ATTACK_BG_COLOR)
+        arcade.draw_lbwh_rectangle_filled(config.ATTACK_X, config.ATTACK_Y, self.width, self.height, config.ATTACK_BG_COLOR)
         global show_range, game_over
         if show_range:
             range_list.draw()
@@ -698,7 +714,7 @@ class TankattackView(arcade.View):
         self.castle = Castle()
         castle_list.append(self.castle)
         self.new_tank_time = 0
-        self.game_over_text = arcade.Text(f"Game Over", (WINDOW_WIDTH/2), WINDOW_HEIGHT/2 + 40, anchor_x="center", anchor_y="center", color=arcade.color.YELLOW, font_size=46, bold=True, italic=True )
+        self.game_over_text = arcade.Text(f"Game Over", (config.WINDOW_WIDTH/2), config.WINDOW_HEIGHT/2 + 40, anchor_x="center", anchor_y="center", color=arcade.color.YELLOW, font_size=46, bold=True, italic=True )
         return
     def setup(self):
         self.section_manager=arcade.SectionManager(self)
@@ -711,9 +727,9 @@ class TankattackView(arcade.View):
         random_x = random.randint(0, 400)
         random_y = random.randint(0, 400)
         if random.randint(-1,1) >= 0:
-            random_x = WINDOW_WIDTH-random_x
+            random_x = config.WINDOW_WIDTH-random_x
         if random.randint(-1,1) >= 0:
-            random_y = WINDOW_HEIGHT-random_y
+            random_y = config.WINDOW_HEIGHT-random_y
         tank = Tank(random_x,random_y,target_sprite=self.castle)
         tank_list.append(tank)
         range_list.append(tank.range_spirte)
@@ -732,7 +748,7 @@ class TankattackView(arcade.View):
         bullet_list.update()
         tower_list.update()
         cur_time = time.time_ns()
-        new_tank_interval_ns = NEW_TANK_INTERVAL * NANO_SECOND
+        new_tank_interval_ns = config.NEW_TANK_INTERVAL * NANO_SECOND
         if self.new_tank_time == 0 or cur_time - self.new_tank_time >= new_tank_interval_ns:
             self.new_tank_time = cur_time
             self._new_tank()
@@ -764,22 +780,82 @@ class TankattackView(arcade.View):
         # tank_list.draw_hit_boxes(arcade.color.RED)
         pass
 
-class InitView(arcade.View):
+class InitView(arcade.gui.UIView):
     def __init__(self):
         super().__init__()
+            #    self.script = arcade.Text(f"{INIT_SCRIPT}", (WINDOW_WIDTH/2), WINDOW_HEIGHT/2 + 80,
+            #                        anchor_x="center", anchor_y="bottom",
+            #                        multiline=True, width=500,
+            #                        color=arcade.color.BLACK, font_size=20,
+            #                        bold=True, italic=False ) 
+        # Define a background color for this view
         self.background_color = arcade.color.DARK_GRAY
-    def setup(self):
-        pass
+        
+        # Use UIAnchorLayout to center our menu UI element on the screen
+        anchor_layout = self.ui.add(arcade.gui.UIAnchorLayout())
+        
+        # Use UIBoxLayout to arrange the title and button vertically
+        box_layout = arcade.gui.UIBoxLayout(vertical=True, space_between=15)
+        
+        # Create a text header label
+        title_label = arcade.gui.UILabel(
+            text=f"{INIT_SCRIPT}",
+            font_size=20,
+            multiline=True,width=500,
+            text_color=arcade.color.BLACK
+        )
+        box_layout.add(title_label)
+        
+        character_layout = arcade.gui.UIBoxLayout(vertical=False, space_between=20)
+        jessica_button = arcade.gui.UIFlatButton(text="Jessica", width=100, height=50)
+        brandon_button = arcade.gui.UIFlatButton(text="Brandon", width=100, height=50)
+        zoe_button = arcade.gui.UIFlatButton(text="Zoe", width=100, height=50)
 
+        @jessica_button.event("on_click")
+        def on_jessica_button_click(event):
+            set_data_by_character("jessica")
+            jessica_button.style=arcade.gui.UIFlatButton.STYLE_RED
+            brandon_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+            zoe_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+        character_layout.add(jessica_button)
+
+        @brandon_button.event("on_click")
+        def on_brandon_button_click(event):
+            set_data_by_character("brandon")
+            jessica_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+            brandon_button.style=arcade.gui.UIFlatButton.STYLE_RED
+            zoe_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+        character_layout.add(brandon_button)
+        
+        @zoe_button.event("on_click")
+        def on_zoe_button_click(event):
+            set_data_by_character("zoe")
+            jessica_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+            brandon_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+            zoe_button.style=arcade.gui.UIFlatButton.STYLE_RED
+        character_layout.add(zoe_button)
+
+        game_button_layout = arcade.gui.UIBoxLayout(vertical=False, space_between=15)
+        start_button = arcade.gui.UIFlatButton( text="Start Game", width=100, height=50)
+        @start_button.event("on_click")
+        def on_button_click(event):
+            print("Initializing game...")
+            global window, view
+            window.show_view(view)
+        game_button_layout.add(start_button)
+
+        anchor_layout.add(child=box_layout, anchor_x="center", anchor_y="center", align_x=0, align_y=200)
+        anchor_layout.add(child=character_layout, anchor_x="center", anchor_y="center", align_x=-0, align_y=-100)
+        anchor_layout.add(child=game_button_layout, anchor_x="center", anchor_y="center", align_x=-0, align_y=-200)
 class TankattackWindow(arcade.Window):
     selected_item = None
     tank_number, tank_total = 0, 0
     tower_number, tower_total = 0, 0
     bomb_number = 0
-    castle_health = CASTLE_HEALTH
-    coin = STARTING_COIN_VALUE
+    castle_health = config.CASTLE_HEALTH
+    coin = config.STARTING_COIN_VALUE
     def __init__(self):
-        super().__init__(WINDOW_WIDTH,WINDOW_HEIGHT,"Tank Attack")
+        super().__init__(config.WINDOW_WIDTH,config.WINDOW_HEIGHT,"Tank Attack")
         return
     def on_key_press(self, key, modifiers):
         global show_range
@@ -798,7 +874,6 @@ def main():
     global window, init_view, view
     window = TankattackWindow()
     init_view =InitView()
-    init_view.setup()
     view = TankattackView()
     view.setup()
     window.show_view(init_view)
