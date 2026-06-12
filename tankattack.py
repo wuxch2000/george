@@ -20,10 +20,15 @@ game_over=False
 NANO_SECOND = 1_000_000_000
 
 INIT_SCRIPT="""
-    This is the script
-this is the second line
-this is the third line
-"""
+In the year of 7293, the world is in a severe shin ramen crisis. Becasue of low agriculture, there is little wheat. The last box falls into YOUR hands, and King BOB will stop at nothing to get it...
+
+Press the item to start building, then when it is done, press it again and drop it down. 
+
+Brandon=lots of coin per tank
+Jessica=fast shooting tower
+Zoe=cheap towers
+
+""" 
 
 class Config:
     NEW_TANK_INTERVAL= 3
@@ -100,7 +105,7 @@ def set_data_by_character(character):
     print(f"set data by {character}")
     global config
     if character == "jessica":
-        config.NEW_TANK_INTERVAL= 0.7
+        config.NEW_TANK_INTERVAL= 1
         config.NEW_TOWER_INTERVAL=1
         config.NEW_BOMB_INTERVAL=2.3
         config.TANK_SPEED = 1
@@ -122,9 +127,55 @@ def set_data_by_character(character):
         config.TOWER_HEALTH = 5
         config.TANK_HEALTH = 3
     elif character == "brandon":
-        config.NEW_TANK_INTERVAL= 2
+        config.NEW_TANK_INTERVAL= 1.5
+        config.NEW_TOWER_INTERVAL=1.2
+        config.NEW_BOMB_INTERVAL=2.5
+        config.TANK_SPEED = 1.2
+        config.BULLET_FROM_TANK_SPEED = 6
+        config.BULLET_FROM_TOWER_SPEED = 6
+        config.CASTLE_RADIUS = 100
+        config.TOWER_RADIUS = 30
+        config.META_TOWER_RADIUS = config.TOWER_RADIUS*1.2
+
+        config.STARTING_COIN_VALUE = 600
+
+        config.COIN_FOR_TANK = 120
+        config.COIN_FOR_TOWER = 400
+        config.COIN_FOR_BOMB = 200
+        config.COIN_FOR_MEGA_TOWER = 800
+
+        config.TOWER_SHOOT_INTERVAL=0.7
+        config.TANK_SHOOT_INTERVAL=1
+        config.MEGA_TOWER_SHOOT_INTERVAL=0.3
+
+        config.TOWER_HEALTH = 6
+        config.TANK_HEALTH = 3
+        config.MEGA_TOWER_HEALTH = 15
     elif character == "zoe":
-        config.NEW_TANK_INTERVAL= 0.9
+        config.NEW_TANK_INTERVAL= 1
+        config.NEW_TOWER_INTERVAL=1
+        config.NEW_BOMB_INTERVAL=2.2
+        config.TANK_SPEED = 1.5
+        config.BULLET_FROM_TANK_SPEED = 4
+        config.BULLET_FROM_TOWER_SPEED = 10
+        config.CASTLE_RADIUS = 100
+        config.TOWER_RADIUS = 30
+        config.META_TOWER_RADIUS = config.TOWER_RADIUS*1.2
+
+        config.STARTING_COIN_VALUE = 600
+
+        config.COIN_FOR_TANK = 90
+        config.COIN_FOR_TOWER = 300
+        config.COIN_FOR_BOMB = 200
+        config.COIN_FOR_MEGA_TOWER = 600
+
+        config.TOWER_SHOOT_INTERVAL=1
+        config.TANK_SHOOT_INTERVAL=1
+        config.MEGA_TOWER_SHOOT_INTERVAL=0.6
+
+        config.TOWER_HEALTH = 6
+        config.TANK_HEALTH = 3
+        config.MEGA_TOWER_HEALTH = 12
 
 
 class Brick(arcade.SpriteSolidColor):
@@ -841,8 +892,9 @@ class InitView(arcade.gui.UIView):
         @start_button.event("on_click")
         def on_button_click(event):
             print("Initializing game...")
-            global window, view
-            window.show_view(view)
+            view = TankattackView()
+            view.setup()
+            view.window.show_view(view)
         game_button_layout.add(start_button)
 
         anchor_layout.add(child=box_layout, anchor_x="center", anchor_y="center", align_x=0, align_y=200)
@@ -875,8 +927,7 @@ def main():
     global window, init_view, view
     window = TankattackWindow()
     init_view =InitView()
-    view = TankattackView()
-    view.setup()
+
     window.show_view(init_view)
     arcade.run()
     return
