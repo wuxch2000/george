@@ -24,9 +24,9 @@ In the year of 7293, the world is in a severe shin ramen crisis. Becasue of low 
 
 Press the item to start building, then when it is done, press it again and drop it down. 
 
-Brandon=lots of coin per tank
-Jessica=fast shooting tower
-Zoe=cheap towers
+Brandon = lots of coin per tank
+Jessica = fast shooting tower
+Zoe     = cheap towers
 
 """ 
 
@@ -838,12 +838,6 @@ class TankattackView(arcade.View):
 class InitView(arcade.gui.UIView):
     def __init__(self):
         super().__init__()
-            #    self.script = arcade.Text(f"{INIT_SCRIPT}", (WINDOW_WIDTH/2), WINDOW_HEIGHT/2 + 80,
-            #                        anchor_x="center", anchor_y="bottom",
-            #                        multiline=True, width=500,
-            #                        color=arcade.color.BLACK, font_size=20,
-            #                        bold=True, italic=False ) 
-        # Define a background color for this view
         self.background_color = arcade.color.DARK_GRAY
         
         # Use UIAnchorLayout to center our menu UI element on the screen
