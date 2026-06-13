@@ -16,7 +16,7 @@ tower_part_list = arcade.SpriteList()
 range_list = arcade.SpriteList()
 show_range=False
 game_over=False
-
+game_pause=False
 NANO_SECOND = 1_000_000_000
 
 INIT_SCRIPT="""
@@ -757,6 +757,8 @@ class TankattackSection(arcade.Section):
             arcade.draw_texture_rect(window.selected_item.textture, rect)
         if game_over:
             self.view.game_over_text.draw()
+        if game_pause:
+            self.view.game_pause_text.draw()
         return
 
 class TankattackView(arcade.View):
@@ -767,6 +769,7 @@ class TankattackView(arcade.View):
         castle_list.append(self.castle)
         self.new_tank_time = 0
         self.game_over_text = arcade.Text(f"Game Over", (config.WINDOW_WIDTH/2), config.WINDOW_HEIGHT/2 + 40, anchor_x="center", anchor_y="center", color=arcade.color.YELLOW, font_size=46, bold=True, italic=True )
+        self.game_pause_text = arcade.Text(f"Pause", (config.WINDOW_WIDTH/2), config.WINDOW_HEIGHT/2 + 40, anchor_x="center", anchor_y="center", color=arcade.color.YELLOW, font_size=46, bold=True, italic=False )
         return
     def setup(self):
         self.section_manager=arcade.SectionManager(self)
@@ -793,8 +796,8 @@ class TankattackView(arcade.View):
         self.section_manager.disable()
         return
     def on_update(self, delta_time):
-        global game_over
-        if game_over:
+        global game_over, game_pause
+        if game_over or game_pause:
             return
         tank_list.update()
         bullet_list.update()
@@ -911,9 +914,11 @@ class TankattackWindow(arcade.Window):
         super().__init__(config.WINDOW_WIDTH,config.WINDOW_HEIGHT,"Tank Attack")
         return
     def on_key_press(self, key, modifiers):
-        global show_range
+        global show_range, game_pause
         match key:
-            case arcade.key.ESCAPE | arcade.key.Q:
+            case arcade.key.ESCAPE:
+                game_pause = not game_pause
+            case arcade.key.Q:
                 print("Game Over")
                 self.close()
             case arcade.key.R:
