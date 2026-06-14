@@ -30,6 +30,8 @@ Zoe     = cheap towers
 
 """ 
 
+character_list=["Jessica", "Brandon", "Zoe"]
+
 class Config:
     NEW_TANK_INTERVAL= 3
     NEW_TOWER_INTERVAL=1.5
@@ -836,53 +838,36 @@ class TankattackView(arcade.View):
         pass
 
 class InitView(arcade.gui.UIView):
+    def _select_character(self, selected_character):
+        for c, button in self.character_buttons.items():
+            if c == selected_character:
+                set_data_by_character(c)
+                button.style=arcade.gui.UIFlatButton.STYLE_RED
+            else:
+                button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
+        pass
+    def on_click(self, event: arcade.gui.UIOnClickEvent):
+        self._select_character(event.source.text)
     def __init__(self):
         super().__init__()
         self.background_color = arcade.color.DARK_GRAY
-        
-        # Use UIAnchorLayout to center our menu UI element on the screen
-        anchor_layout = self.ui.add(arcade.gui.UIAnchorLayout())
-        
-        # Use UIBoxLayout to arrange the title and button vertically
+        anchor_layout = arcade.gui.UIAnchorLayout()
+        self.ui.add(anchor_layout)
         box_layout = arcade.gui.UIBoxLayout(vertical=True, space_between=15)
-        
-        # Create a text header label
         title_label = arcade.gui.UILabel(
             text=f"{INIT_SCRIPT}",
             font_size=20,
             multiline=True,width=500,
-            text_color=arcade.color.BLACK
-        )
+            text_color=arcade.color.BLACK)
         box_layout.add(title_label)
         
+        self.character_buttons = {}
         character_layout = arcade.gui.UIBoxLayout(vertical=False, space_between=20)
-        jessica_button = arcade.gui.UIFlatButton(text="Jessica", width=100, height=50)
-        brandon_button = arcade.gui.UIFlatButton(text="Brandon", width=100, height=50)
-        zoe_button = arcade.gui.UIFlatButton(text="Zoe", width=100, height=50)
-
-        @jessica_button.event("on_click")
-        def on_jessica_button_click(event):
-            set_data_by_character("jessica")
-            jessica_button.style=arcade.gui.UIFlatButton.STYLE_RED
-            brandon_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
-            zoe_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
-        character_layout.add(jessica_button)
-
-        @brandon_button.event("on_click")
-        def on_brandon_button_click(event):
-            set_data_by_character("brandon")
-            jessica_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
-            brandon_button.style=arcade.gui.UIFlatButton.STYLE_RED
-            zoe_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
-        character_layout.add(brandon_button)
-        
-        @zoe_button.event("on_click")
-        def on_zoe_button_click(event):
-            set_data_by_character("zoe")
-            jessica_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
-            brandon_button.style=arcade.gui.UIFlatButton.DEFAULT_STYLE
-            zoe_button.style=arcade.gui.UIFlatButton.STYLE_RED
-        character_layout.add(zoe_button)
+        for c in character_list:
+            button = arcade.gui.UIFlatButton(text=c, width=100, height=50)
+            button.on_click = self.on_click
+            self.character_buttons[c] = button
+            character_layout.add(button)
 
         game_button_layout = arcade.gui.UIBoxLayout(vertical=False, space_between=15)
         start_button = arcade.gui.UIFlatButton( text="Start Game", width=100, height=50)
