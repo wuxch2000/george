@@ -19,18 +19,24 @@ game_over=False
 game_pause=False
 NANO_SECOND = 1_000_000_000
 
-INIT_SCRIPT="""
-In the year of 7293, the world is in a severe shin ramen crisis. Becasue of low agriculture, there is little wheat. The last box falls into YOUR hands, and King BOB will stop at nothing to get it...
+character_list=["Jessica", "Brandon", "Zoe"]
 
+STORY="""
+In the year of 7293, the world is in a severe shin ramen crisis. 
+
+Becasue of low agriculture, there is little wheat. 
+
+The last box falls into YOUR hands, and King BOB will stop at nothing to get it...
+"""
+
+CHARACTER_DESC=f"""
 Press the item to start building, then when it is done, press it again and drop it down. 
 
-Brandon = lots of coin per tank
-Jessica = fast shooting tower
-Zoe     = cheap towers
-
+{character_list[0]:10} = lots of coin per tank
+{character_list[1]:10} = fast shooting tower
+{character_list[2]:10} = cheap towers
 """ 
 
-character_list=["Jessica", "Brandon", "Zoe"]
 
 class Config:
     NEW_TANK_INTERVAL= 3
@@ -854,13 +860,18 @@ class InitView(arcade.gui.UIView):
         anchor_layout = arcade.gui.UIAnchorLayout()
         self.ui.add(anchor_layout)
         box_layout = arcade.gui.UIBoxLayout(vertical=True, space_between=15)
-        title_label = arcade.gui.UILabel(
-            text=f"{INIT_SCRIPT}",
+        box_layout.add(arcade.gui.UILabel(
+            text=f"{STORY}",
+            font_name= ("comic sans ms"),
             font_size=20,
-            multiline=True,width=500,
-            text_color=arcade.color.BLACK)
-        box_layout.add(title_label)
-        
+            multiline=True,width=1000,
+            text_color=arcade.color.BLACK))
+        box_layout.add(arcade.gui.UILabel(
+            text=f"{CHARACTER_DESC}",
+            font_name= ("Courier New"),
+            font_size=20,
+            multiline=True,width=1000,
+            text_color=arcade.color.BLACK))
         self.character_buttons = {}
         character_layout = arcade.gui.UIBoxLayout(vertical=False, space_between=20)
         for c in character_list:
@@ -870,7 +881,7 @@ class InitView(arcade.gui.UIView):
             character_layout.add(button)
 
         game_button_layout = arcade.gui.UIBoxLayout(vertical=False, space_between=15)
-        start_button = arcade.gui.UIFlatButton( text="Start Game", width=100, height=50)
+        start_button = arcade.gui.UIFlatButton(text="Start Game", width=200, height=50, style=arcade.gui.UIFlatButton.STYLE_BLUE)
         @start_button.event("on_click")
         def on_button_click(event):
             print("Initializing game...")
